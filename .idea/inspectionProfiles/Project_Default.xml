@@ -1,0 +1,17 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="PyUnresolvedReferencesInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredIdentifiers">
+        <list>
+          <option value="preprocess.save_model_pt" />
+          <option value="load_data.tensorboardX" />
+          <option value="tensorboardX" />
+          <option value="elements.common.utils" />
+          <option value="elements.load_model.basic.head_layers" />
+          <option value="tensorflow.python.keras.preprocessing" />
+        </list>
+      </option>
+    </inspection_tool>
+  </profile>
+</component>
