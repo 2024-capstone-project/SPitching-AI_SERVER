@@ -90,7 +90,7 @@ def load_model():
     return joblib.load(model_path)
 
 
-def body(vid, loading_bar_pose):
+def body(vid):
     # Rest of your code remains mostly unchanged, with adjustments for the Pose model
     pos = 0
     crossed = 0
@@ -111,8 +111,6 @@ def body(vid, loading_bar_pose):
     # Camera preparation
     cap = cv2.VideoCapture(vid)  # You may need to adjust the camera source
 
-    loading_bar_pose.progress(10)
-
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, cap_width)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, cap_height)
 
@@ -129,8 +127,6 @@ def body(vid, loading_bar_pose):
         keypoint_classifier_labels = f.read().splitlines()
 
     mode = 0
-
-    loading_bar_pose.progress(20)
 
     progress = 20
 
@@ -167,9 +163,6 @@ def body(vid, loading_bar_pose):
 
         if results.pose_landmarks is not None:
             count = count + 1
-            if progress <= 80:
-                progress + 0.01
-                loading_bar_pose.progress((int(progress)))
 
             # Bounding box calculation
             brect = calc_bounding_rect(debug_image, results.pose_landmarks)
@@ -216,8 +209,6 @@ def body(vid, loading_bar_pose):
     cap.release()
     # cv2.destroyAllWindows()
 
-    loading_bar_pose.progress(80)
-
     try:
         pos_score = (pos / count) * 100
         crosed_score = (crossed / count) * 100
@@ -254,7 +245,5 @@ def body(vid, loading_bar_pose):
         print(e)
         pos_score = 0
         message = 'No user detected.'
-
-    loading_bar_pose.progress(90)
 
     return output_frames, message, pos_score

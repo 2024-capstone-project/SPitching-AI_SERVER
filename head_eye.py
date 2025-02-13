@@ -155,10 +155,6 @@ def newbratio(transformed_eye_coordinates):
     else:
         return False
 
-
-import streamlit as st
-
-
 def draw_bounding_rect(use_brect, image, brect, rect_color):
     if use_brect:
         # Outer rectangle
@@ -198,7 +194,7 @@ def draw_info_text(image, brect, facial_text):
     return image
 
 
-def head_eye(vid, loading_bar_smile):
+def head_eye(vid):
     count = 0
 
     text = ''
@@ -225,8 +221,6 @@ def head_eye(vid, loading_bar_smile):
 
     cap = cv2.VideoCapture(vid)
 
-    loading_bar_smile.progress(10)
-
     output_file = r'E:\project demo\media\eye-contact.mp4'
 
     # print(output_file)
@@ -248,8 +242,6 @@ def head_eye(vid, loading_bar_smile):
     frame_height = int(cap.get(4))
 
     out = cv2.VideoWriter(output_file, fourcc, fps, (frame_width, frame_height))
-
-    loading_bar_smile.progress(30)
 
     progress = 30
 
@@ -285,10 +277,6 @@ def head_eye(vid, loading_bar_smile):
             if results.multi_face_landmarks:
                 for face_landmarks in results.multi_face_landmarks:
                     count = count + 1
-
-                    if progress <= 80:
-                        progress + 0.01
-                        loading_bar_smile.progress((int(progress)))
 
                     if fps % 1441 == 0:
                         blinklist.append(blinkcount)
@@ -392,7 +380,7 @@ def head_eye(vid, loading_bar_smile):
                 center_left = np.array([l_cx, l_cy], dtype=np.int32)
                 center_right = np.array([r_cx, r_cy], dtype=np.int32)
 
-                # detecting smile
+                # detecting head_eye
 
                 forehead = tuple(mesh_points[FACE_OVAL][0])
                 # print(forehead)
@@ -524,8 +512,6 @@ def head_eye(vid, loading_bar_smile):
         head_score = ((headcount / count) * 100)
         eye_score = ((eyecount / count) * 100)
 
-        loading_bar_smile.progress(70)
-
         # print(head_score)
 
         messagep = 'YOUR POSITIVE AREAS: '
@@ -566,8 +552,6 @@ def head_eye(vid, loading_bar_smile):
                     int(total_blink)) + ". Too much blinking indicate lack of concentration."
         except:
             print('')
-
-        loading_bar_smile.progress(90)
 
         if messagep == 'YOUR POSITIVE AREAS: ':
             messagep = ''
