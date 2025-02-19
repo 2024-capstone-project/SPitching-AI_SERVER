@@ -52,7 +52,7 @@ async def analyze_head_eye(
 
         # 4. 처리된 비디오 URL 생성 (로컬에서는 로컬 URL을 사용)
         video_url = f"/static/outputs/{output_video_filename}"
-        # 배포 환경에서는 서버의 URL을 기준으로 비디오 URL을 반환해야 하므로, videoUrl을 서버릐 실제 URL 경로로 설정
+        # 배포 환경에서는 서버의 URL을 기준으로 비디오 URL을 반환해야 하므로, videoUrl을 서버의 실제 URL 경로로 설정
         # app.mount("/static", StaticFiles(directory="static"), name="static")
 
         # 5. 분석 결과와 비디오 URL 반환
