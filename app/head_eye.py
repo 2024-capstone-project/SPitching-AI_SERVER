@@ -512,56 +512,51 @@ def head_eye(vid):
         head_score = ((headcount / count) * 100)
         eye_score = ((eyecount / count) * 100)
 
-        # print(head_score)
-
-        messagep = 'YOUR POSITIVE AREAS: '
-        messagen = 'NEEDS IMPROVEMENT: '
+        messagep = '긍정적인 부분: '
+        messagen = '개선이 필요한 부분: '
 
         if head_score <= 50:
-            messagen += "Your head was not straight most of the time. Keep it straight."
+            messagen += "머리의 방향이 대부분 비스듬히 있었습니다. 머리를 곧게 유지하세요."
         elif 50 < head_score <= 90:
-            messagen += "Consider maintaining a more consistent straight head posture."
+            messagen += "머리의 방향을 좀 더 일관되게 곧게 유지하는 연습을 해보세요."
         elif 90 < head_score:
-            messagep += "Great job maintaining your head straight! It showcases your focus and attentiveness."
+            messagep += "머리의 방향을 곧게 유지한 것이 훌륭합니다! 집중력과 주의를 잘 보여줍니다."
 
         if blink_too_long == 1:
-            messagen = messagen + " Don't close your eyes for too long."
+            messagen = messagen + " 눈을 너무 오래 감지 마세요."
 
         if eye_score <= 25:
-            messagen = messagen + " It seems like you are looking away occasionally. Consider practicing maintaining eye contact."
+            messagen = messagen + " 가끔 눈을 돌리고 있는 것 같습니다. 눈을 맞추는 연습을 해보세요."
         elif 25 < eye_score <= 50:
-            messagen = messagen + " Limited eye contact detected. Consider practicing maintaining eye contact for longer stretches to increase your confidence and connect with your audience."
+            messagen = messagen + " 시선처리가 제한적입니다. 자신감을 높이고 청중과 연결하기 위해 더 긴 시간 동안 눈을 맞추는 연습을 해보세요."
         elif 50 < eye_score <= 75:
-            messagen = messagen + " Your eye contact is not bad, but try holding it longer."
+            messagen = messagen + " 시선처리는 나쁘지 않지만, 좀 더 오래 유지하는 것이 좋습니다."
         elif 75 < eye_score <= 90:
-            messagep = messagep + " Good Job in maintaining eye contact for most of the time."
+            messagep = messagep + " 대부분의 시간 동안 좋은 시선처리를 유지했습니다. 잘 했습니다."
         elif 90 < eye_score:
-            messagep = messagep + " Impressive! Your eye contact is very strong!"
+            messagep = messagep + " 인상적입니다! 시선처리를 매우 잘했습니다!"
 
         try:
             total_blink = sum(blinklist) / len(blinklist)
-            # print(total_blink)
         except:
             print('')
-
-        # print("count = ", fps)
 
         try:
             if total_blink > 20:
-                messagen = messagen + " You are blinking too much. On average, most people blink around 15 to 20 times each minute. You were blinking on an average of " + str(
-                    int(total_blink)) + ". Too much blinking indicate lack of concentration."
+                messagen = messagen + " 눈을 너무 많이 깜박였습니다. 평균적으로 대부분의 사람들은 1분에 약 15~20번 정도 눈을 깜박입니다. 당신은 평균 " + str(
+                    int(total_blink)) + "번을 깜박였습니다. 너무 많은 눈 깜박임은 집중 부족을 나타낼 수 있습니다."
         except:
             print('')
 
-        if messagep == 'YOUR POSITIVE AREAS: ':
+        if messagep == '긍정적인 부분: ':
             messagep = ''
-        if messagen == 'NEEDS IMPROVEMENT: ':
+        if messagen == '개선이 필요한 부분: ':
             messagen = ''
 
         message = messagep + "\n\n" + messagen
 
     except:
         head_score, eye_score = 0, 0
-        message = 'No face detected.'
+        message = '얼굴이 감지되지 않았습니다.'
 
     return output_frames, message, head_score, eye_score

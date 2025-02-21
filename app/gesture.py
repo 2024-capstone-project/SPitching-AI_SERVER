@@ -217,26 +217,26 @@ def body(vid):
 
         message = ''
 
-        messagep = 'YOUR POSITIVE AREAS: '
-        messagen = 'NEEDS IMPROVEMENT: '
+        messagep = '긍정적인 부분: '
+        messagen = '개선이 필요한 부분: '
 
         if pos_score >= 70:
-            messagep = messagep + " Good job on sitting straight and using hand gestures while explaining things. This emphasizes enthusiasm, and enhances approachability."
+            messagep = messagep + " 자세를 바로 하고, 설명할 때 손 제스처를 사용하는 것이 좋습니다. 이는 열정을 강조하고 접근성을 높여줍니다."
         else:
-            messagen = messagen + " Sit straight and use hand gestures while explaining things. It emphasizes enthusiasm, and enhances approachability."
+            messagen = messagen + " 설명할 때 자세를 바로 하고, 손 제스처를 사용해 보세요. 이는 열정을 강조하고 접근성을 높여줍니다."
 
         if crosed_score >= 10:
-            messagen = messagen + " Don't cross your arms. Crossing arms signals disinterest or defensiveness."
+            messagen = messagen + " 팔짱을 끼지 마세요. 팔짱은 무관심하거나 방어적인 태도를 나타낼 수 있습니다."
 
         if raised_score >= 10:
-            messagen = messagen + " Don't raise your arms. Raised arms shows dominance and makes you look unprofessional."
+            messagen = messagen + " 팔을 들지 마세요. 팔을 들면 권위적이고 비전문적으로 보일 수 있습니다."
 
         if face_score >= 10:
-            messagen = messagen + " Don't touch your face. Touching the face can convey insecurity."
+            messagen = messagen + " 얼굴을 만지지 마세요. 얼굴을 만지는 것은 불안감을 나타낼 수 있습니다."
 
-        if messagep == 'YOUR POSITIVE AREAS: ':
+        if messagep == '긍정적인 부분: ':
             messagep = ''
-        if messagen == 'NEEDS IMPROVEMENT: ':
+        if messagen == '개선이 필요한 부분: ':
             messagen = ''
 
         message = messagep + '\n\n' + messagen
@@ -244,6 +244,6 @@ def body(vid):
     except Exception as e:
         print(e)
         pos_score = 0
-        message = 'No user detected.'
+        message = '사용자가 감지되지 않았습니다.'
 
     return output_frames, message, pos_score
