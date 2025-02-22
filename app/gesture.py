@@ -86,12 +86,12 @@ def draw_info_text(image, brect, facial_text):
 
 @lru_cache()
 def load_model():
-    model_path = os.path.join(os.path.dirname(__file__), 'model','gesture_XGB_model.pkl')
+    model_path = os.path.join(os.path.dirname(__file__), 'models','gesture_XGB_model.pkl')
     return joblib.load(model_path)
 
 
 def body(vid):
-    # Rest of your code remains mostly unchanged, with adjustments for the Pose model
+    # Rest of your code remains mostly unchanged, with adjustments for the Pose models
     pos = 0
     crossed = 0
     raised = 0
@@ -118,7 +118,7 @@ def body(vid):
     mp_pose = mp.solutions.pose
     pose = mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
 
-    # Load the XGBoost model
+    # Load the XGBoost models
     xg_boost_model = load_model()
 
     # Read labels
@@ -173,7 +173,7 @@ def body(vid):
             # Conversion to relative coordinates / normalized coordinates
             pre_processed_landmark_list = pre_process_landmark(landmark_list)
 
-            # Emotion classification using SVM model
+            # Emotion classification using SVM models
             facial_emotion_id = xg_boost_model.predict([pre_processed_landmark_list])[0]
 
             # Determine the color of the bounding rectangle
