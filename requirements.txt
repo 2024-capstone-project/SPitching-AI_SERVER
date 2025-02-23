@@ -5,3 +5,7 @@ numpy
 av
 mediapipe
 joblib
+tensorflow
+pydub
+librosa
+SpeechRecognition
