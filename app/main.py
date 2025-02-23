@@ -1,6 +1,8 @@
 import numpy as np
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.responses import JSONResponse
+
+from app.stt import get_prediction, ResponseModel
 from gesture import body
 from head_eye import head_eye
 from io import BytesIO
@@ -111,6 +113,21 @@ async def analyze_gesture(
 
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": f"Error processing video: {str(e)}"})
+
+@app.post("/api/v1/model/stt", response_model=ResponseModel)
+async def stt(pk: str = Form(...), file: UploadFile = File(...)):
+    webm_file = await file.read()
+    transcript, statistics = await get_prediction(webm_file)
+
+    response_data = {
+        "interviewQuestionId": pk,
+        "mumble": statistics[0]['mumble'],
+        "silent": statistics[0]['silent'],
+        "talk": statistics[0]['talk'],
+        "time": statistics[0]['time'],
+        "text": transcript
+    }
+    return JSONResponse(content=response_data)
 
 
 if __name__ == "__main__":
