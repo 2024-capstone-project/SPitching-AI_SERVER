@@ -9,3 +9,4 @@ tensorflow
 pydub
 librosa
 SpeechRecognition
+ffmpeg

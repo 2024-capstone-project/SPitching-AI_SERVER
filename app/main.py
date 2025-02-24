@@ -11,8 +11,15 @@ import av
 import shutil
 import uuid
 
-UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'static', 'uploads')
-OUTPUT_FOLDER = os.path.join(os.path.dirname(__file__), 'static', 'outputs')
+# 현재 파일의 디렉토리 경로
+app_dir = os.path.dirname(__file__)
+
+# app 디렉토리의 부모 디렉토리 경로
+project_root = os.path.dirname(app_dir)
+
+# static 디렉토리 내의 uploads와 outpouts 폴더 경로 설정
+UPLOAD_FOLDER = os.path.join(project_root, 'static', 'uploads')
+OUTPUT_FOLDER = os.path.join(project_root, 'static', 'outputs')
 
 app = FastAPI()
 @app.post("/api/v1/model/head_eye")
@@ -115,12 +122,12 @@ async def analyze_gesture(
         return JSONResponse(status_code=500, content={"message": f"Error processing video: {str(e)}"})
 
 @app.post("/api/v1/model/stt", response_model=ResponseModel)
-async def stt(pk: str = Form(...), file: UploadFile = File(...)):
+async def analyze_stt(pk: str = Form(...), file: UploadFile = File(...)):
     webm_file = await file.read()
     transcript, statistics = await get_prediction(webm_file)
 
     response_data = {
-        "interviewQuestionId": pk,
+        "sttId": pk,
         "mumble": statistics[0]['mumble'],
         "silent": statistics[0]['silent'],
         "talk": statistics[0]['talk'],
