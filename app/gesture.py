@@ -8,6 +8,9 @@ import numpy as np
 import mediapipe as mp
 import joblib
 
+app_dir = os.path.dirname(__file__)
+project_root = os.path.dirname(app_dir)
+
 def calc_landmark_list(image, landmarks):
     image_width, image_height = image.shape[1], image.shape[0]
     landmark_point = []
@@ -86,7 +89,8 @@ def draw_info_text(image, brect, facial_text):
 
 @lru_cache()
 def load_model():
-    model_path = os.path.join(os.path.dirname(__file__), 'models','gesture_XGB_model.pkl')
+    # 모델 경로 설정
+    model_path = os.path.join(project_root, 'models','gesture_XGB_model.pkl')
     return joblib.load(model_path)
 
 
@@ -122,7 +126,7 @@ def body(vid):
     xg_boost_model = load_model()
 
     # Read labels
-    label_file_path = os.path.join(os.path.dirname(__file__), 'label', 'gesture_keypoint_classifier_label.csv')
+    label_file_path = os.path.join(project_root, 'label', 'gesture_keypoint_classifier_label.csv')
     with open(label_file_path, encoding='utf-8-sig') as f:
         keypoint_classifier_labels = f.read().splitlines()
 
