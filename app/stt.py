@@ -9,13 +9,18 @@ import os
 from pydantic import BaseModel
 import speech_recognition as sr
 
+# 현재 파일의 디렉토리 경로
+app_dir = os.path.dirname(__file__)
+
+# app 디렉토리의 부모 디렉토리 경로
+project_root = os.path.dirname(app_dir)
+
 # 모델 경로 설정
-current_dir = os.path.dirname(os.path.abspath(__file__))
-classifier_model_path = os.path.join(current_dir, '..', 'models', 'filter_classifier_model.h5')
-determine_model_path = os.path.join(current_dir, '..', 'models', 'filter_determine_model.h5')
+classifier_model_path = os.path.join(project_root, 'models', 'filter_classifier_model.h5')
+determine_model_path = os.path.join(project_root, 'models', 'filter_determine_model.h5')
 
 # 모델 불러오기
-filler_classifier_model = tf.keras.models.load_model(classifier_model_path)
+filter_classifier_model = tf.keras.models.load_model(classifier_model_path)
 filter_determine_model = tf.keras.models.load_model(determine_model_path)
 
 # 전역 변수 선언
@@ -48,7 +53,7 @@ def predict_filler(audio_file):
     padded_mfcc = pad2d(mfcc, 40)
     padded_mfcc = np.expand_dims(padded_mfcc, 0)
 
-    result = filler_classifier_model.predict(padded_mfcc)
+    result = filter_classifier_model.predict(padded_mfcc)
     if result[0][0] >= result[0][1]:
         return 0
     else:
@@ -65,7 +70,7 @@ def predict_filler_type(audio_file):
     mfcc = librosa.feature.mfcc(y=wav)
     padded_mfcc = pad2d(mfcc, 40)
     padded_mfcc = np.expand_dims(padded_mfcc, 0)
-    result = filler_classifier_model.predict(padded_mfcc)
+    result = filter_classifier_model.predict(padded_mfcc)
 
     os.remove("temp.wav")
     return np.argmax(result)

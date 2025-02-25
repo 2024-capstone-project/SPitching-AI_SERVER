@@ -10,3 +10,4 @@ pydub
 librosa
 SpeechRecognition
 ffmpeg
+xgboost
