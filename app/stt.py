@@ -16,11 +16,11 @@ app_dir = os.path.dirname(__file__)
 project_root = os.path.dirname(app_dir)
 
 # 모델 경로 설정
-classifier_model_path = os.path.join(project_root, 'models', 'filter_classifier_model.h5')
+classifier_model_path = os.path.join(project_root, 'models', 'filler_classifier_model.h5')
 determine_model_path = os.path.join(project_root, 'models', 'filter_determine_model.h5')
 
 # 모델 불러오기
-filter_classifier_model = tf.keras.models.load_model(classifier_model_path)
+filler_classifier_model = tf.keras.models.load_model(classifier_model_path)
 filter_determine_model = tf.keras.models.load_model(determine_model_path)
 
 # 전역 변수 선언
@@ -47,13 +47,16 @@ def match_target_amplitude(sound, target_dBFS):
 
 
 def predict_filler(audio_file):
-    audio_file.export("temp.wav", format="wav")
+    OUTPUT_FOLDER = os.path.join(project_root, 'static', 'outputs')
+    file_path = os.path.join(OUTPUT_FOLDER, 'temp.wav')
+    audio_file.export(file_path, format="wav")
+
     wav, sr = librosa.load("temp.wav", sr=16000)
     mfcc = librosa.feature.mfcc(y=wav)
     padded_mfcc = pad2d(mfcc, 40)
     padded_mfcc = np.expand_dims(padded_mfcc, 0)
 
-    result = filter_classifier_model.predict(padded_mfcc)
+    result = filler_classifier_model.predict(padded_mfcc)
     if result[0][0] >= result[0][1]:
         return 0
     else:
@@ -70,7 +73,7 @@ def predict_filler_type(audio_file):
     mfcc = librosa.feature.mfcc(y=wav)
     padded_mfcc = pad2d(mfcc, 40)
     padded_mfcc = np.expand_dims(padded_mfcc, 0)
-    result = filter_classifier_model.predict(padded_mfcc)
+    result = filler_classifier_model.predict(padded_mfcc)
 
     os.remove("temp.wav")
     return np.argmax(result)
