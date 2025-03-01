@@ -11,10 +11,8 @@ import av
 import shutil
 import uuid
 
-# 현재 파일의 디렉토리 경로
+# 프로젝트 root 디렉토리 설정
 app_dir = os.path.dirname(__file__)
-
-# app 디렉토리의 부모 디렉토리 경로
 project_root = os.path.dirname(app_dir)
 
 # static 디렉토리 내의 uploads와 outpouts 폴더 경로 설정
@@ -23,9 +21,8 @@ OUTPUT_FOLDER = os.path.join(project_root, 'static', 'outputs')
 
 app = FastAPI()
 @app.post("/api/v1/model/head_eye")
-async def analyze_head_eye(
-        file: UploadFile = File(...),
-        pk: str = Form(default=str(uuid.uuid4()))):
+async def analyze_head_eye( file: UploadFile = File(...)):
+    pk = str(uuid.uuid4())
 
     # 1. 파일 저장
     video_filename = f"{pk}_{file.filename}"
@@ -66,6 +63,7 @@ async def analyze_head_eye(
 
         # 5. 분석 결과와 비디오 URL 반환
         return JSONResponse(content={
+            "headEyeId" : pk,
             "headScore": head_score,
             "eyeScore": eye_score,
             "message": message,
@@ -77,9 +75,8 @@ async def analyze_head_eye(
 
 
 @app.post("/api/v1/model/gesture")
-async def analyze_gesture(
-        file: UploadFile = File(...),
-        pk: str = Form(default=str(uuid.uuid4()))):
+async def analyze_gesture(file: UploadFile = File(...)):
+    pk = str(uuid.uuid4())
     try:
         # 1. 파일 저장
         file_filename = f"{uuid.uuid4().hex}_{file.filename}"
@@ -113,6 +110,7 @@ async def analyze_gesture(
 
         # 6. 분석 결과와 비디오 URL 반환
         return JSONResponse(content={
+            "gestureId" : pk,
             "poseScore": pose_score,
             "message": message,
             "videoUrl": video_url
@@ -122,9 +120,10 @@ async def analyze_gesture(
         return JSONResponse(status_code=500, content={"message": f"Error processing video: {str(e)}"})
 
 @app.post("/api/v1/model/stt", response_model=ResponseModel)
-async def analyze_stt(pk: str = Form(...), file: UploadFile = File(...)):
-    webm_file = await file.read()
-    transcript, statistics = await get_prediction(webm_file)
+async def analyze_stt(file: UploadFile = File(...)):
+    pk = str(uuid.uuid4())
+    video_data = await file.read()
+    transcript, statistics = await get_prediction(video_data)
 
     response_data = {
         "sttId": pk,
