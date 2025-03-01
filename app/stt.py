@@ -4,10 +4,10 @@ from pydub.silence import detect_nonsilent
 import librosa
 import numpy as np
 import io
-import subprocess
 import os
 from pydantic import BaseModel
 import speech_recognition as sr
+import subprocess
 
 # 현재 파일의 디렉토리 경로
 app_dir = os.path.dirname(__file__)
@@ -30,6 +30,22 @@ pad2d = lambda a, i: a[:, 0:i] if a.shape[1] > i else np.hstack((a, np.zeros((a.
 frame_length = 0.025
 frame_stride = 0.0010
 
+# 어떤 비디오 파일이든 WebM으로 변환
+def convert_video_to_webm(video_content: bytes) -> bytes:
+    ffmpeg_process = subprocess.Popen(
+        [
+            "ffmpeg", "-i", "pipe:",  # 입력을 파이프에서 받음
+            "-c:v", "libvpx", "-b:v", "1M",  # 비디오 코덱 설정 (VP8)
+            "-c:a", "libvorbis",  # 오디오 코덱 설정 (Vorbis)
+            "-f", "webm", "pipe:"  # WebM 포맷으로 출력
+        ],
+        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL
+    )
+
+    # FFmpeg에 비디오 데이터 전달하여 변환 실행
+    webm_content, _ = ffmpeg_process.communicate(input=video_content)
+
+    return webm_content
 
 # Helper functions for processing audio
 def convert_webm_to_wav(webm_content):
@@ -48,10 +64,10 @@ def match_target_amplitude(sound, target_dBFS):
 
 def predict_filler(audio_file):
     OUTPUT_FOLDER = os.path.join(project_root, 'static', 'outputs')
-    file_path = os.path.join(OUTPUT_FOLDER, 'temp.wav')
-    audio_file.export(file_path, format="wav")
+    temp_wav_path = os.path.join(OUTPUT_FOLDER, 'temp.wav')
+    audio_file.export(temp_wav_path, format="wav")
 
-    wav, sr = librosa.load("temp.wav", sr=16000)
+    wav, sr = librosa.load(temp_wav_path, sr=16000)
     mfcc = librosa.feature.mfcc(y=wav)
     padded_mfcc = pad2d(mfcc, 40)
     padded_mfcc = np.expand_dims(padded_mfcc, 0)
@@ -215,8 +231,9 @@ def STT_with_json(audio_file, jsons):
     return filtered_transcript, statistics_silence_json
 
 
-async def get_prediction(audio_content):
-    wav_file = convert_webm_to_wav(audio_content)
+async def get_prediction(video_data):
+    webm_content = convert_video_to_webm(video_data)
+    wav_file = convert_webm_to_wav(webm_content)
     audio = AudioSegment.from_wav(io.BytesIO(wav_file))
     intervals_jsons = create_json(audio)
     transcript, statistics = STT_with_json(audio, intervals_jsons)
@@ -224,7 +241,7 @@ async def get_prediction(audio_content):
 
 # FastAPI endpoint
 class ResponseModel(BaseModel):
-    interviewQuestionId: str
+    sttId: str
     mumble: int
     silent: int
     talk: int
