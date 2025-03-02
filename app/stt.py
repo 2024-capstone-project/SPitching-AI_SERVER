@@ -9,11 +9,9 @@ from pydantic import BaseModel
 import speech_recognition as sr
 import subprocess
 
-# 현재 파일의 디렉토리 경로
 app_dir = os.path.dirname(__file__)
-
-# app 디렉토리의 부모 디렉토리 경로
 project_root = os.path.dirname(app_dir)
+OUTPUT_FOLDER = os.path.join(project_root, 'static', 'outputs')
 
 # 모델 경로 설정
 classifier_model_path = os.path.join(project_root, 'models', 'filler_classifier_model.h5')
@@ -63,7 +61,6 @@ def match_target_amplitude(sound, target_dBFS):
 
 
 def predict_filler(audio_file):
-    OUTPUT_FOLDER = os.path.join(project_root, 'static', 'outputs')
     temp_wav_path = os.path.join(OUTPUT_FOLDER, 'temp.wav')
     audio_file.export(temp_wav_path, format="wav")
 
@@ -80,7 +77,7 @@ def predict_filler(audio_file):
 
 
 def predict_filler_type(audio_file):
-    audio_file.export("temp.wav", format="wav")
+    audio_file.export(OUTPUT_FOLDER, format="wav")
 
     wav, sr = librosa.load("temp.wav", sr=16000)
     input_nfft = int(round(sr * frame_length))
