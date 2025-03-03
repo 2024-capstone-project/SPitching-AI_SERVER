@@ -5,13 +5,15 @@ import librosa
 import numpy as np
 import io
 import os
-from pydantic import BaseModel
 import speech_recognition as sr
 import subprocess
 
 app_dir = os.path.dirname(__file__)
 project_root = os.path.dirname(app_dir)
+
 OUTPUT_FOLDER = os.path.join(project_root, 'static', 'outputs')
+os.makedirs(OUTPUT_FOLDER, exist_ok=True)  # 폴더 없으면 생성
+temp_wav_path = os.path.join(OUTPUT_FOLDER, "temp.wav")
 
 # 모델 경로 설정
 classifier_model_path = os.path.join(project_root, 'models', 'filler_classifier_model.h5')
@@ -61,7 +63,6 @@ def match_target_amplitude(sound, target_dBFS):
 
 
 def predict_filler(audio_file):
-    temp_wav_path = os.path.join(OUTPUT_FOLDER, 'temp.wav')
     audio_file.export(temp_wav_path, format="wav")
 
     wav, sr = librosa.load(temp_wav_path, sr=16000)
@@ -77,9 +78,7 @@ def predict_filler(audio_file):
 
 
 def predict_filler_type(audio_file):
-    audio_file.export(OUTPUT_FOLDER, format="wav")
-
-    wav, sr = librosa.load("temp.wav", sr=16000)
+    wav, sr = librosa.load(temp_wav_path, sr=16000)
     input_nfft = int(round(sr * frame_length))
     input_stride = int(round(sr * frame_stride))
 
@@ -88,7 +87,7 @@ def predict_filler_type(audio_file):
     padded_mfcc = np.expand_dims(padded_mfcc, 0)
     result = filler_classifier_model.predict(padded_mfcc)
 
-    os.remove("temp.wav")
+    os.remove(temp_wav_path)
     return np.argmax(result)
 
 
@@ -177,6 +176,8 @@ def STT_with_json(audio_file, jsons):
                 silence = "(" + str(round(first_silence)) + "초).."
                 transcript_json.append({'start': 0, 'end': json['start'], 'tag': '0000', 'result': silence})
                 first_silence_interval = first_silence
+
+            # 추임새(어,음,그) 구분
             filler_type = predict_filler_type(audio_file[json['start']:json['end']])
             if filler_type == 0:
                 transcript_json.append({'start': json['start'], 'end': json['end'], 'tag': '1001', 'result': '어(추임새)'})
@@ -189,11 +190,12 @@ def STT_with_json(audio_file, jsons):
                 filler_3 = filler_3 + 1
             num = num + 1
         elif json['tag'] == '1000':
+            # 인식 불가 처리
             if unrecognizable_start != 0:
-                audio_file[unrecognizable_start:json['end']].export("temp.wav", format="wav")
+                audio_file[unrecognizable_start:json['end']].export(temp_wav_path, format="wav")
             else:
-                audio_file[json['start']:json['end']].export("temp.wav", format="wav")
-            temp_audio_file = sr.AudioFile('temp.wav')
+                audio_file[json['start']:json['end']].export(temp_wav_path, format="wav")
+            temp_audio_file = sr.AudioFile(temp_wav_path)
             with temp_audio_file as source:
                 audio = r.record(source)
             try:
@@ -221,26 +223,12 @@ def STT_with_json(audio_file, jsons):
                                                 audio_total_length - first_silence - silence_interval) / audio_total_length),
                                     'time': round(audio_total_length)})
 
-    transcript = [item['result'] for item in transcript_json]
-    filtered_transcript = [value for value in transcript if ('(추임새)' not in value) and ('..' not in value)]
-
-    filtered_transcript = ' '.join(filtered_transcript)
-    return filtered_transcript, statistics_silence_json
-
+    return statistics_filler_json, statistics_silence_json, transcript_json
 
 async def get_prediction(video_data):
     webm_content = convert_video_to_webm(video_data)
     wav_file = convert_webm_to_wav(webm_content)
     audio = AudioSegment.from_wav(io.BytesIO(wav_file))
     intervals_jsons = create_json(audio)
-    transcript, statistics = STT_with_json(audio, intervals_jsons)
-    return transcript, statistics
-
-# FastAPI endpoint
-class ResponseModel(BaseModel):
-    sttId: str
-    mumble: int
-    silent: int
-    talk: int
-    time: int
-    text: str
+    statistics_filler, statistics_silence, transcript = STT_with_json(audio, intervals_jsons)
+    return statistics_filler, statistics_silence, transcript
