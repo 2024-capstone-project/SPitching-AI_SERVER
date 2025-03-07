@@ -227,7 +227,7 @@ def body(vid):
         if pos_score >= 70:
             messagep = messagep + " 자세도 바르고 손동작도 발표 내내 적절했어요. 발표 전달력이 돋보였습니다!"
         else:
-            messagen = messagen + " 설명할 때 자세를 바로 하고, 손동작을 사용해 보세요. 이는 열정을 강조하고 발표 전달력을 높여줍니다."
+            messagen = messagen + " 설명할 때 자세를 바로 하고, 손동작을 조금 더 적극적으로 사용해 보세요. 이는 열정을 강조하고 발표 전달력을 높여줍니다."
 
         if crosed_score >= 10:
             messagen = messagen + " 팔짱 끼는 것을 자제하세요. 팔짱은 무관심하거나 방어적인 태도를 나타낼 수 있습니다."
@@ -247,7 +247,7 @@ def body(vid):
 
     except Exception as e:
         print(e)
-        gesture_score = 0
+        pos_score = 0
         message = '사용자가 감지되지 않았습니다.'
 
-    return output_frames, message, gesture_score
+    return output_frames, message, pos_score
