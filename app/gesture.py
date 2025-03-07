@@ -225,18 +225,18 @@ def body(vid):
         messagen = '개선이 필요한 부분: '
 
         if pos_score >= 70:
-            messagep = messagep + " 자세를 바로 하고, 설명할 때 손 제스처를 사용하는 것이 좋습니다. 이는 열정을 강조하고 접근성을 높여줍니다."
+            messagep = messagep + " 자세도 바르고 손동작도 발표 내내 적절했어요. 발표 전달력이 돋보였습니다!"
         else:
-            messagen = messagen + " 설명할 때 자세를 바로 하고, 손 제스처를 사용해 보세요. 이는 열정을 강조하고 접근성을 높여줍니다."
+            messagen = messagen + " 설명할 때 자세를 바로 하고, 손동작을 사용해 보세요. 이는 열정을 강조하고 발표 전달력을 높여줍니다."
 
         if crosed_score >= 10:
-            messagen = messagen + " 팔짱을 끼지 마세요. 팔짱은 무관심하거나 방어적인 태도를 나타낼 수 있습니다."
+            messagen = messagen + " 팔짱 끼는 것을 자제하세요. 팔짱은 무관심하거나 방어적인 태도를 나타낼 수 있습니다."
 
         if raised_score >= 10:
-            messagen = messagen + " 팔을 들지 마세요. 팔을 들면 권위적이고 비전문적으로 보일 수 있습니다."
+            messagen = messagen + " 팔을 너무 자주 올리지 마세요. 발표 중 팔을 올리는 것은 권위적이고 지배적으로 보일 수 있으며, 전문적으로 보이지 않습니다."
 
         if face_score >= 10:
-            messagen = messagen + " 얼굴을 만지지 마세요. 얼굴을 만지는 것은 불안감을 나타낼 수 있습니다."
+            messagen = messagen + " 얼굴을 만지지 마세요. 발표 중 얼굴을 만지는 것은 청중에게 불안감을 전달할 수 있습니다."
 
         if messagep == '긍정적인 부분: ':
             messagep = ''
@@ -247,7 +247,7 @@ def body(vid):
 
     except Exception as e:
         print(e)
-        pos_score = 0
+        gesture_score = 0
         message = '사용자가 감지되지 않았습니다.'
 
-    return output_frames, message, pos_score
+    return output_frames, message, gesture_score
