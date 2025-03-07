@@ -123,12 +123,13 @@ async def analyze_gesture(file: UploadFile = File(...)):
 async def analyze_stt(file: UploadFile = File(...)):
     pk = str(uuid.uuid4())
     video_data = await file.read()
-    statistics_filler, statistics_silence, transcript = await get_prediction(video_data)
+    statistics_filler, statistics_silence, stt_score_feedback, transcript = await get_prediction(video_data)
 
     response_data = {
         "sttId": pk,
         "statistics_filler": statistics_filler,
         "statistics_silence": statistics_silence,
+        "stt_score_feedback": stt_score_feedback,
         "transcript": transcript
     }
     return JSONResponse(content=response_data)
