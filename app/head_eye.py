@@ -516,11 +516,11 @@ def head_eye(vid):
         messagen = '개선이 필요한 부분: '
 
         if head_score <= 50:
-            messagen += "머리의 방향이 대부분 비스듬히 있었습니다. 머리를 곧게 유지하세요."
+            messagen += "고개의 방향이 대부분 비스듬히 있었습니다. 머리를 곧게 유지하세요."
         elif 50 < head_score <= 90:
-            messagen += "머리의 방향을 좀 더 일관되게 곧게 유지하는 연습을 해보세요."
+            messagen += "고개의 방향을 좀 더 일관되게 올바르게 유지하는 연습을 해보세요."
         elif 90 < head_score:
-            messagep += "머리의 방향을 곧게 유지한 것이 훌륭합니다! 집중력과 주의를 잘 보여줍니다."
+            messagep += "고개의 방향을 발표 내내 바르게 유지했네요. 훌륭해요!"
 
         if blink_too_long == 1:
             messagen = messagen + " 눈을 너무 오래 감지 마세요."
@@ -528,13 +528,13 @@ def head_eye(vid):
         if eye_score <= 25:
             messagen = messagen + " 가끔 눈을 돌리고 있는 것 같습니다. 눈을 맞추는 연습을 해보세요."
         elif 25 < eye_score <= 50:
-            messagen = messagen + " 시선처리가 제한적입니다. 자신감을 높이고 청중과 연결하기 위해 더 긴 시간 동안 눈을 맞추는 연습을 해보세요."
+            messagen = messagen + " 시선처리가 제한적입니다. 자신감을 높이고 청중과 연결되기 위해 더 긴 시간 동안 눈을 맞추는 연습을 해보세요."
         elif 50 < eye_score <= 75:
-            messagen = messagen + " 시선처리는 나쁘지 않지만, 좀 더 오래 유지하는 것이 좋습니다."
+            messagen = messagen + " 시선처리는 나쁘지 않지만, 청중과의 아이컨텍을 좀 더 오래 유지하는 것이 좋습니다."
         elif 75 < eye_score <= 90:
             messagep = messagep + " 대부분의 시간 동안 좋은 시선처리를 유지했습니다. 잘 했습니다."
         elif 90 < eye_score:
-            messagep = messagep + " 인상적입니다! 시선처리를 매우 잘했습니다!"
+            messagep = messagep + " 훌륭해요! 시선처리를 매우 잘했습니다."
 
         try:
             total_blink = sum(blinklist) / len(blinklist)
