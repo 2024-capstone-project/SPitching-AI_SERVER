@@ -158,27 +158,34 @@ def STT_with_json(audio_file, jsons):
     transcript_json = []
     statistics_filler_json = []
     statistics_silence_json = []
-    filler_1 = 0
-    filler_2 = 0
-    filler_3 = 0
+    stt_score_feedback_json = []
+
+    filler_1 = 0 # 어
+    filler_2 = 0 # 음
+    filler_3 = 0 # 그
+    filler_total_time = 0 # 어음그 총 사용시간
+
     audio_total_length = audio_file.duration_seconds
     silence_interval = 0
+
     for json in jsons:
-        if json['tag'] == '0000':
+        if json['tag'] == '0000': # 침묵
             if num == 0:
                 first_silence = first_silence + (json['end'] - json['start']) / 1000
             else:
                 silence_interval = silence_interval + (json['end'] - json['start']) / 1000
                 silence = "(" + str(round((json['end'] - json['start']) / 1000)) + "초).."
                 transcript_json.append({'start': json['start'], 'end': json['end'], 'tag': '0000', 'result': silence})
-        elif json['tag'] == '1111':
+        elif json['tag'] == '1111': # 추임새 (어,음,그) 처리
             if num == 0:
                 silence = "(" + str(round(first_silence)) + "초).."
                 transcript_json.append({'start': 0, 'end': json['start'], 'tag': '0000', 'result': silence})
                 first_silence_interval = first_silence
 
-            # 추임새(어,음,그) 구분
+            # 추임새 유형 분류
             filler_type = predict_filler_type(audio_file[json['start']:json['end']])
+            duration = (json['end'] - json['start']) / 1000 # 초 단위 변환
+
             if filler_type == 0:
                 transcript_json.append({'start': json['start'], 'end': json['end'], 'tag': '1001', 'result': '어(추임새)'})
                 filler_1 = filler_1 + 1
@@ -188,9 +195,11 @@ def STT_with_json(audio_file, jsons):
             else:
                 transcript_json.append({'start': json['start'], 'end': json['end'], 'tag': '1100', 'result': '그(추임새)'})
                 filler_3 = filler_3 + 1
+
+            filler_total_time += duration # 총 filler word 사용시간 증가
             num = num + 1
-        elif json['tag'] == '1000':
-            # 인식 불가 처리
+
+        elif json['tag'] == '1000': # 인식 불가 처리
             if unrecognizable_start != 0:
                 audio_file[unrecognizable_start:json['end']].export(temp_wav_path, format="wav")
             else:
@@ -216,19 +225,53 @@ def STT_with_json(audio_file, jsons):
                 if unrecognizable_start == 0:
                     unrecognizable_start = json['start']
 
-    statistics_filler_json.append({'어': filler_1, '음': filler_2, '그': filler_3})
-    statistics_silence_json.append({'mumble': round(100 * first_silence_interval / audio_total_length),
-                                    'silent': round(100 * silence_interval / audio_total_length),
-                                    'talk': round(100 * (
-                                                audio_total_length - first_silence - silence_interval) / audio_total_length),
-                                    'time': round(audio_total_length)})
+    filler_ratio = round(100*filler_total_time/(audio_total_length - first_silence - silence_interval), 2)
+    stt_filler_score, stt_feedback = calculate_filler_score(filler_ratio)
+    stt_score_feedback_json.append({'불필요한 추임새 제어 점수' : stt_filler_score,
+                                    '발표 유창성 피드백' : stt_feedback})
 
-    return statistics_filler_json, statistics_silence_json, transcript_json
+    statistics_filler_json.append({'어': filler_1,
+                                   '음': filler_2,
+                                    '그': filler_3,
+                                   '불필요한 추임새 총 개수': filler_1+filler_2+filler_3,
+                                   '발화시간 대비 추임새 비율(%)': filler_ratio})
+
+    statistics_silence_json.append({'침묵비율(%)': round(100 * silence_interval / audio_total_length),
+                                    '발화비율(%)': round(100 * (
+                                                audio_total_length - first_silence - silence_interval) / audio_total_length),
+                                    '전체발표시간(초)': round(audio_total_length)})
+
+    return statistics_filler_json, statistics_silence_json, stt_score_feedback_json, transcript_json
+
+def calculate_filler_score(filler_ratio):
+
+    if filler_ratio <= 3:
+        score = 100 - filler_ratio*2
+        stt_feedback = "아주 훌륭합니다! 발표에서 불필요한 추임새가 거의 사용되지 않았습니다. 자연스럽고 유창한 발표였습니다."
+    elif filler_ratio <= 5:
+        score = 100 - filler_ratio*3
+        stt_feedback = "발표 중 ‘어, 음, 그’와 같은 불필요한 추임새가 다소 반복적으로 사용되었습니다. " \
+                   "발표의 흐름이 살짝 끊기는 느낌이 있었지만, 내용 전달에는 큰 영향을 주지 않았습니다." \
+                   "다음 발표에서는 문장을 더 명확하게 구성하는 연습을 해보는 것이 좋겠습니다."
+    elif filler_ratio <= 10:
+        score = 100 - filler_ratio*3
+        stt_feedback = "발표에서 불필요한 추임새가 자주 등장하여 발표의 명확성이 다소 저하되었습니다. " \
+                   "발표를 듣는 동안 청중이 핵심 내용을 파악하는데 방해가 될 가능성이 있습니다." \
+                   "발표 전 충분한 연습을 통해 자연스럽게 발표 내용을 연결하는 연습을 해보세요."
+    else:
+        score = 100 - filler_ratio*4
+        stt_feedback = "발표에서 불필요한 추임새가 과도하게 사용되었습니다. " \
+                   "발표 흐름이 끊기고, 청중의 집중도가 낮아질 가능성이 높습니다." \
+                   "발표 내용이 전달되기 어려울 수 있으므로, 명확하고 간결한 문장을 구성하는 연습이 필요합니다." \
+                   "짧은 문장으로 말하는 연습을 하거나, 발표 전에 키워드를 미리 정리하여 불필요한 추임새를 줄여보세요."
+
+    stt_filler_score = max(0, score)
+    return stt_filler_score, stt_feedback
 
 async def get_prediction(video_data):
     webm_content = convert_video_to_webm(video_data)
     wav_file = convert_webm_to_wav(webm_content)
     audio = AudioSegment.from_wav(io.BytesIO(wav_file))
     intervals_jsons = create_json(audio)
-    statistics_filler, statistics_silence, transcript = STT_with_json(audio, intervals_jsons)
-    return statistics_filler, statistics_silence, transcript
+    statistics_filler, statistics_silence, stt_score_feedback, transcript = STT_with_json(audio, intervals_jsons)
+    return statistics_filler, statistics_silence, stt_score_feedback, transcript
