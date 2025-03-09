@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 
 from app.stt import get_prediction
 from gesture import body
-from head_eye import head_eye
+from eyecontact import eyecontact
 from io import BytesIO
 import os
 import av
@@ -20,8 +20,8 @@ UPLOAD_FOLDER = os.path.join(project_root, 'static', 'uploads')
 OUTPUT_FOLDER = os.path.join(project_root, 'static', 'outputs')
 
 app = FastAPI()
-@app.post("/api/v1/model/head_eye")
-async def analyze_head_eye( file: UploadFile = File(...)):
+@app.post("/api/v1/model/eyecontact")
+async def analyze_eyecontact( file: UploadFile = File(...)):
     pk = str(uuid.uuid4())
 
     # 1. 파일 저장
@@ -31,10 +31,10 @@ async def analyze_head_eye( file: UploadFile = File(...)):
     with open(video_filepath, "wb") as f:
         shutil.copyfileobj(file.file, f)
 
-    # 2. head_eye 분석 실행
+    # 2. eyecontact 분석 실행
     try:
-        # head_eye 함수에서 필요한 데이터들 받기
-        output_frames, message, head_score, eye_score = head_eye(video_filepath)
+        # eyecontact 함수에서 필요한 데이터들 받기
+        output_frames, message, eyecontact_score = eyecontact(video_filepath)
 
         # 3. 비디오 파일을 분석 결과와 함께 저장
         output_video_filename = f"processed_{uuid.uuid4().hex}.mp4"
@@ -63,9 +63,8 @@ async def analyze_head_eye( file: UploadFile = File(...)):
 
         # 5. 분석 결과와 비디오 URL 반환
         return JSONResponse(content={
-            "headEyeId" : pk,
-            "headScore": head_score,
-            "eyeScore": eye_score,
+            "eyecontactId" : pk,
+            "eyecontactScore": eyecontact_score,
             "message": message,
             "videoUrl": video_url
         })
