@@ -1,6 +1,7 @@
 import numpy as np
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.responses import JSONResponse
+from datetime import datetime
 
 from app.stt import get_prediction
 from gesture import body
@@ -22,10 +23,11 @@ OUTPUT_FOLDER = os.path.join(project_root, 'static', 'outputs')
 app = FastAPI()
 @app.post("/api/v1/model/eyecontact")
 async def analyze_eyecontact( file: UploadFile = File(...)):
-    pk = str(uuid.uuid4())
+    original_name, _ = os.path.splitext(file.filename)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    # 1. 파일 저장
-    video_filename = f"{pk}_{file.filename}"
+    # 1. 업로드된 원본 파일 저장
+    video_filename = f"{original_name}_{timestamp}.mp4"
     video_filepath = os.path.join(UPLOAD_FOLDER, video_filename)
 
     with open(video_filepath, "wb") as f:
@@ -37,7 +39,9 @@ async def analyze_eyecontact( file: UploadFile = File(...)):
         output_frames, message, eyecontact_score = eyecontact(video_filepath)
 
         # 3. 비디오 파일을 분석 결과와 함께 저장
-        output_video_filename = f"processed_{uuid.uuid4().hex}.mp4"
+        original_name, _ = os.path.splitext(file.filename)  # 확장자 제거한 원본 파일명
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")  # 현재 날짜 및 시간
+        output_video_filename = f"{original_name}_eyecontact_{timestamp}.mp4"
         output_video_path = os.path.join(OUTPUT_FOLDER, output_video_filename)
 
         # PyAV를 사용해 비디오 처리 후 저장
@@ -56,14 +60,13 @@ async def analyze_eyecontact( file: UploadFile = File(...)):
         with open(output_video_path, "wb") as out_file:
             out_file.write(output_video_bytes.getvalue())
 
-        # 4. 처리된 비디오 URL 생성 (로컬에서는 로컬 URL을 사용)
+        # 4. 처리된 비디오 URL 생성 (로컬에서는 로컬 URL 사용)
         video_url = f"/static/outputs/{output_video_filename}"
         # 배포 환경에서는 서버의 URL을 기준으로 비디오 URL을 반환해야 하므로, videoUrl을 서버의 실제 URL 경로로 설정
         # app.mount("/static", StaticFiles(directory="static"), name="static")
 
         # 5. 분석 결과와 비디오 URL 반환
         return JSONResponse(content={
-            "eyecontactId" : pk,
             "eyecontactScore": eyecontact_score,
             "message": message,
             "videoUrl": video_url
@@ -75,18 +78,20 @@ async def analyze_eyecontact( file: UploadFile = File(...)):
 
 @app.post("/api/v1/model/gesture")
 async def analyze_gesture(file: UploadFile = File(...)):
-    pk = str(uuid.uuid4())
+
     try:
         # 1. 파일 저장
-        file_filename = f"{uuid.uuid4().hex}_{file.filename}"
-        file_path = os.path.join(UPLOAD_FOLDER, file_filename)
+        original_name, _ = os.path.splitext(file.filename)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-        with open(file_path, "wb") as f:
+        video_filename = f"{original_name}_{timestamp}.mp4"
+        video_filepath = os.path.join(UPLOAD_FOLDER, video_filename)
+
+        with open(video_filepath, "wb") as f:
             shutil.copyfileobj(file.file, f)
 
         # 2. 제스처 분석 실행
-        # 'body' 함수에서 필요한 데이터들 받기
-        output_frames, message, pose_score = body(file_path)
+        output_frames, message, pose_score = body(video_filepath)
 
         # 3. PyAV를 사용해 비디오 처리 후 저장
         output_video_bytes = BytesIO()
@@ -99,7 +104,7 @@ async def analyze_gesture(file: UploadFile = File(...)):
                     container.mux(packet)
 
         # 4. 비디오 처리 결과를 저장
-        output_video_filename = f"processed_{uuid.uuid4().hex}.mp4"
+        output_video_filename = f"{original_name}_gesture_{timestamp}.mp4"
         output_video_path = os.path.join(OUTPUT_FOLDER, output_video_filename)
         with open(output_video_path, "wb") as out_file:
             out_file.write(output_video_bytes.getvalue())
@@ -109,7 +114,6 @@ async def analyze_gesture(file: UploadFile = File(...)):
 
         # 6. 분석 결과와 비디오 URL 반환
         return JSONResponse(content={
-            "gestureId" : pk,
             "poseScore": pose_score,
             "message": message,
             "videoUrl": video_url
@@ -120,12 +124,11 @@ async def analyze_gesture(file: UploadFile = File(...)):
 
 @app.post("/api/v1/model/stt")
 async def analyze_stt(file: UploadFile = File(...)):
-    pk = str(uuid.uuid4())
+
     video_data = await file.read()
     statistics_filler, statistics_silence, stt_score_feedback, transcript = await get_prediction(video_data)
 
     response_data = {
-        "sttId": pk,
         "statistics_filler": statistics_filler,
         "statistics_silence": statistics_silence,
         "stt_score_feedback": stt_score_feedback,
