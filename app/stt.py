@@ -227,7 +227,7 @@ def STT_with_json(audio_file, jsons):
 
     filler_ratio = round(100*filler_total_time/(audio_total_length - first_silence - silence_interval), 2)
     stt_filler_score, stt_feedback = calculate_filler_score(filler_ratio)
-    stt_score_feedback_json.append({'불필요한 추임새 제어 점수' : stt_filler_score,
+    stt_score_feedback_json.append({'발표 유창성 점수' : stt_filler_score,
                                     '발표 유창성 피드백' : stt_feedback})
 
     statistics_filler_json.append({'어': filler_1,
