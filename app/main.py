@@ -1,5 +1,5 @@
 import numpy as np
-from fastapi import FastAPI, UploadFile, File, Form
+from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import JSONResponse
 from datetime import datetime
 
@@ -10,7 +10,6 @@ from io import BytesIO
 import os
 import av
 import shutil
-import uuid
 
 # 프로젝트 root 디렉토리 설정
 app_dir = os.path.dirname(__file__)
