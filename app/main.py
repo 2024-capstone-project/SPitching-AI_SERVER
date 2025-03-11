@@ -90,7 +90,7 @@ async def analyze_gesture(file: UploadFile = File(...)):
             shutil.copyfileobj(file.file, f)
 
         # 2. 제스처 분석 실행
-        output_frames, message, pose_score = body(video_filepath)
+        output_frames, message, gesture_score = body(video_filepath)
 
         # 3. PyAV를 사용해 비디오 처리 후 저장
         output_video_bytes = BytesIO()
@@ -113,7 +113,7 @@ async def analyze_gesture(file: UploadFile = File(...)):
 
         # 6. 분석 결과와 비디오 URL 반환
         return JSONResponse(content={
-            "poseScore": pose_score,
+            "gestureScore": gesture_score,
             "message": message,
             "videoUrl": video_url
         })

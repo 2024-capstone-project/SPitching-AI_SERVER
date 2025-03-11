@@ -80,7 +80,7 @@ def draw_info_text(image, brect, facial_text):
                   (0, 0, 0), -1)
 
     if facial_text != "":
-        info_text = 'Pose :' + facial_text
+        info_text = 'Gesture :' + facial_text
     cv2.putText(image, info_text, (brect[0] + 5, brect[1] - 4),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1, cv2.LINE_AA)
 
@@ -96,12 +96,16 @@ def load_model():
 
 def body(vid):
     # Rest of your code remains mostly unchanged, with adjustments for the Pose models
-    pos = 0
-    crossed = 0
-    raised = 0
-    explain = 0
-    straight = 0
-    face = 0
+
+    # 발표력을 향상시키는 제스처 (+)
+    explain = 0  # 1) 설명하는 손동작
+    straight = 0  # 2) 바른 자세
+    pos = 0 # explain + straight
+
+    # 발표력을 저해하는 제스처 (-)
+    crossed = 0 # 3) 팔짱 끼는 동작
+    raised = 0 # 4) 팔을 들어올림
+    face = 0 # 5) 손을 얼굴로 가져다댐
 
     count = 0
     cap_device = 0
@@ -214,7 +218,7 @@ def body(vid):
     # cv2.destroyAllWindows()
 
     try:
-        pos_score = (pos / count) * 100
+        gesture_score = (pos / count) * 100
         crosed_score = (crossed / count) * 100
         raised_score = (raised / count) * 100
         face_score = (face / count) * 100
@@ -224,7 +228,7 @@ def body(vid):
         messagep = '긍정적인 부분: '
         messagen = '개선이 필요한 부분: '
 
-        if pos_score >= 70:
+        if gesture_score >= 70:
             messagep = messagep + " 자세도 바르고 손동작도 발표 내내 적절했어요. 발표 전달력이 돋보였습니다!"
         else:
             messagen = messagen + " 설명할 때 자세를 바로 하고, 손동작을 조금 더 적극적으로 사용해 보세요. 이는 열정을 강조하고 발표 전달력을 높여줍니다."
@@ -247,7 +251,7 @@ def body(vid):
 
     except Exception as e:
         print(e)
-        pos_score = 0
+        gesture_score = 0
         message = '사용자가 감지되지 않았습니다.'
 
-    return output_frames, message, pos_score
+    return output_frames, message, gesture_score
