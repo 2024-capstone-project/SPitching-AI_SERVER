@@ -125,8 +125,8 @@ def newirispos2(transformed_eye_coordinates, image):
     point1_int = (int(p[0]), int(p[1]))
     point2_int = (int(iris[0]), int(iris[1]))
 
-    cv2.circle(image, point1_int, 5, (0, 0, 255), -1)  # Red color for point1
-    cv2.circle(image, point2_int, 5, (0, 255, 0), -1)  # Green color for point2
+    #cv2.circle(image, point1_int, 5, (0, 0, 255), -1)  # Red color for point1
+    #cv2.circle(image, point2_int, 5, (0, 255, 0), -1)  # Green color for point2
 
     return con
 
@@ -335,16 +335,16 @@ def eyecontact(vid):
                     p1 = (int(nose_2d[0]) - 100, int(nose_2d[1]))
                     p2 = (int(nose_2d[0] + y * 10) - 100, int(nose_2d[1] - x * 10))
 
-                    if not (-5 < int(y) < 5 and -5 < int(x) < 5):
-                        straight = 0
-                        cv2.rectangle(frame, (25, 80), (200, 110), BLACK, -1)
-                        cv2.putText(frame, 'Look straight', (30, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.5, WHITE, 1)
-                        # print(count, ": Head not straight")
-                    else:
-                        # cv2.rectangle(frame, (25, 80), (200, 110), BLACK, -1)
-                        # cv2.putText(frame, 'Head straight', (30, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.5, WHITE, 1)
-                        straight = 1
-                        # print(count, ": Head straight")
+                    # if not (-5 < int(y) < 5 and -5 < int(x) < 5):
+                    #     straight = 0
+                    #     cv2.rectangle(frame, (25, 80), (200, 110), BLACK, -1)
+                    #     cv2.putText(frame, 'Look straight', (30, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.5, WHITE, 1)
+                    #     # print(count, ": Head not straight")
+                    # else:
+                    #     # cv2.rectangle(frame, (25, 80), (200, 110), BLACK, -1)
+                    #     # cv2.putText(frame, 'Head straight', (30, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.5, WHITE, 1)
+                    #     straight = 1
+                    #     # print(count, ": Head straight")
 
                 mesh_coords = landmarkdet(frame, results)
 
@@ -361,16 +361,16 @@ def eyecontact(vid):
                 # print(abs(fhead[0] - chin[0]))
 
                 # Check if the slope is almost straight
-                if straight == 1:
-                    if abs(fhead[0] - chin[0]) < threshold:
-                        straight = 1
-                        cv2.rectangle(frame, (25, 80), (200, 110), BLACK, -1)
-                        cv2.putText(frame, 'Head straight', (30, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.5, WHITE, 1)
-                        headcount = headcount + 1
-                    else:
-                        straight = 0
-                        cv2.rectangle(frame, (25, 80), (200, 110), BLACK, -1)
-                        cv2.putText(frame, 'Look straight', (30, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.5, WHITE, 1)
+                # if straight == 1:
+                #     if abs(fhead[0] - chin[0]) < threshold:
+                #         straight = 1
+                #         cv2.rectangle(frame, (25, 80), (200, 110), BLACK, -1)
+                #         cv2.putText(frame, 'Head straight', (30, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.5, WHITE, 1)
+                #         headcount = headcount + 1
+                #     else:
+                #         straight = 0
+                #         cv2.rectangle(frame, (25, 80), (200, 110), BLACK, -1)
+                #         cv2.putText(frame, 'Look straight', (30, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.5, WHITE, 1)
 
                 (l_cx, l_cy), l_radius = cv2.minEnclosingCircle(mesh_points[LEFT_IRIS])
                 (r_cx, r_cy), r_radius = cv2.minEnclosingCircle(mesh_points[RIGHT_IRIS])
@@ -512,22 +512,48 @@ def eyecontact(vid):
         messagen = '개선이 필요한 부분: '
 
         if eyecontact_score <= 25:
-            messagen = messagen + " 가끔 눈을 돌리고 있는 것 같습니다. 눈을 맞추는 연습을 해보세요."
+            messagen += (
+                "발표 중 시선을 자주 피하는 경향이 있습니다. "
+                "이는 청중에게 자신감이 부족하다는 인상을 줄 수 있습니다. "
+                "청중과의 신뢰를 형성하고 메시지 전달력을 높이기 위해 의식적으로 아이 컨택을 늘리는 연습이 필요합니다. "
+                "거울 앞에서 연습하거나, 발표 영상을 촬영하여 본인의 시선 처리를 점검해보는 것도 좋은 방법입니다."
+            )
+
         elif 25 < eyecontact_score <= 50:
-            messagen = messagen + " 시선처리가 제한적입니다. 자신감을 높이고 청중과 연결되기 위해 더 긴 시간 동안 눈을 맞추는 연습을 해보세요."
+            messagen += (
+                "시선 처리가 제한적이며, 발표 도중 눈이 자주 흔들리는 경향이 있습니다. "
+                "이는 청중과의 소통을 단절시키고, 발표자가 긴장하고 있다는 인상을 줄 수 있습니다. "
+                "발표할 때 주요 청중을 여러 번 바라보며 고르게 시선을 배분하는 연습을 해보세요. "
+                "이를 통해 보다 자연스럽고 자신감 있는 발표를 할 수 있습니다."
+            )
+
         elif 50 < eyecontact_score <= 75:
-            messagen = messagen + " 시선처리는 나쁘지 않지만, 청중과의 아이컨텍을 좀 더 오래 유지하는 것이 좋습니다."
+            messagen += (
+                "시선 처리가 비교적 안정적이지만, 청중과의 아이 컨택을 더욱 지속적으로 유지하면 발표의 신뢰도를 한층 높일 수 있습니다. "
+                "중요한 메시지를 전달할 때는 특정 청중을 바라보며 강조하는 방식으로 말하면 더욱 효과적입니다. "
+                "또한, 발표 공간 전체를 두루 살펴보면서 다양한 청중과 시선을 맞추는 습관을 들이면 더욱 자연스럽고 설득력 있는 발표가 될 것입니다."
+            )
+
         elif 75 < eyecontact_score <= 90:
-            messagep = messagep + " 대부분의 시간 동안 좋은 시선처리를 유지했습니다. 잘 했습니다."
+            messagep += (
+                "전반적으로 안정적이고 자연스러운 시선 처리를 유지했습니다. "
+                "청중과의 연결이 원활하게 이루어졌으며, 발표 내용의 신뢰도를 높이는 데 긍정적인 영향을 주었습니다. "
+                "앞으로도 중요한 핵심 메시지를 전달할 때 적절한 시선 처리를 활용하면 더욱 효과적인 발표가 될 것입니다."
+            )
+
         elif 90 < eyecontact_score:
-            messagep = messagep + " 훌륭해요! 시선처리를 매우 잘했습니다."
+            messagep += (
+                "훌륭합니다! 청중과의 적극적인 아이 컨택을 통해 강한 신뢰감과 자신감을 전달했습니다. "
+                "눈을 피하지 않고 청중을 주의 깊게 바라보며 말하는 모습은 매우 인상적이었으며, 발표의 설득력을 높이는 데 큰 역할을 했습니다. "
+                "이러한 자연스럽고 안정적인 시선 처리는 청중과의 소통을 원활하게 만들며,발표자로서의 전문성을 더욱 돋보이게 합니다."
+            )
 
         if messagep == '긍정적인 부분: ':
             messagep = ''
         if messagen == '개선이 필요한 부분: ':
             messagen = ''
 
-        message = messagep + "\n\n" + messagen
+        message = messagep + messagen
 
     except:
         eyecontact_score = 0
