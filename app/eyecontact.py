@@ -125,8 +125,8 @@ def newirispos2(transformed_eye_coordinates, image):
     point1_int = (int(p[0]), int(p[1]))
     point2_int = (int(iris[0]), int(iris[1]))
 
-    cv2.circle(image, point1_int, 5, (0, 0, 255), -1)  # Red color for point1
-    cv2.circle(image, point2_int, 5, (0, 255, 0), -1)  # Green color for point2
+    #cv2.circle(image, point1_int, 5, (0, 0, 255), -1)  # Red color for point1
+    #cv2.circle(image, point2_int, 5, (0, 255, 0), -1)  # Green color for point2
 
     return con
 
@@ -335,16 +335,16 @@ def eyecontact(vid):
                     p1 = (int(nose_2d[0]) - 100, int(nose_2d[1]))
                     p2 = (int(nose_2d[0] + y * 10) - 100, int(nose_2d[1] - x * 10))
 
-                    if not (-5 < int(y) < 5 and -5 < int(x) < 5):
-                        straight = 0
-                        cv2.rectangle(frame, (25, 80), (200, 110), BLACK, -1)
-                        cv2.putText(frame, 'Look straight', (30, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.5, WHITE, 1)
-                        # print(count, ": Head not straight")
-                    else:
-                        # cv2.rectangle(frame, (25, 80), (200, 110), BLACK, -1)
-                        # cv2.putText(frame, 'Head straight', (30, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.5, WHITE, 1)
-                        straight = 1
-                        # print(count, ": Head straight")
+                    # if not (-5 < int(y) < 5 and -5 < int(x) < 5):
+                    #     straight = 0
+                    #     cv2.rectangle(frame, (25, 80), (200, 110), BLACK, -1)
+                    #     cv2.putText(frame, 'Look straight', (30, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.5, WHITE, 1)
+                    #     # print(count, ": Head not straight")
+                    # else:
+                    #     # cv2.rectangle(frame, (25, 80), (200, 110), BLACK, -1)
+                    #     # cv2.putText(frame, 'Head straight', (30, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.5, WHITE, 1)
+                    #     straight = 1
+                    #     # print(count, ": Head straight")
 
                 mesh_coords = landmarkdet(frame, results)
 
@@ -361,16 +361,16 @@ def eyecontact(vid):
                 # print(abs(fhead[0] - chin[0]))
 
                 # Check if the slope is almost straight
-                if straight == 1:
-                    if abs(fhead[0] - chin[0]) < threshold:
-                        straight = 1
-                        cv2.rectangle(frame, (25, 80), (200, 110), BLACK, -1)
-                        cv2.putText(frame, 'Head straight', (30, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.5, WHITE, 1)
-                        headcount = headcount + 1
-                    else:
-                        straight = 0
-                        cv2.rectangle(frame, (25, 80), (200, 110), BLACK, -1)
-                        cv2.putText(frame, 'Look straight', (30, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.5, WHITE, 1)
+                # if straight == 1:
+                #     if abs(fhead[0] - chin[0]) < threshold:
+                #         straight = 1
+                #         cv2.rectangle(frame, (25, 80), (200, 110), BLACK, -1)
+                #         cv2.putText(frame, 'Head straight', (30, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.5, WHITE, 1)
+                #         headcount = headcount + 1
+                #     else:
+                #         straight = 0
+                #         cv2.rectangle(frame, (25, 80), (200, 110), BLACK, -1)
+                #         cv2.putText(frame, 'Look straight', (30, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.5, WHITE, 1)
 
                 (l_cx, l_cy), l_radius = cv2.minEnclosingCircle(mesh_points[LEFT_IRIS])
                 (r_cx, r_cy), r_radius = cv2.minEnclosingCircle(mesh_points[RIGHT_IRIS])
