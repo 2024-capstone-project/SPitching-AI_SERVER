@@ -4,8 +4,8 @@ from fastapi.responses import JSONResponse
 from datetime import datetime
 
 from app.stt import get_prediction
-from gesture import body
-from eyecontact import eyecontact
+from app.gesture import body
+from app.eyecontact import eyecontact
 from io import BytesIO
 import os
 import av
@@ -18,6 +18,10 @@ project_root = os.path.dirname(app_dir)
 # static 디렉토리 내의 uploads와 outpouts 폴더 경로 설정
 UPLOAD_FOLDER = os.path.join(project_root, 'static', 'uploads')
 OUTPUT_FOLDER = os.path.join(project_root, 'static', 'outputs')
+
+# 폴더가 존재하지 않으면 생성
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
 app = FastAPI()
 @app.post("/api/v1/model/eyecontact")
