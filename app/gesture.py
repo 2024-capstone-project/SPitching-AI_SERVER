@@ -218,7 +218,7 @@ def body(vid):
     # cv2.destroyAllWindows()
 
     try:
-        gesture_score = (pos / count) * 100
+        gesture_score = int(round((pos / count) * 100, 1))
         crosed_score = (crossed / count) * 100
         raised_score = (raised / count) * 100
         face_score = (face / count) * 100

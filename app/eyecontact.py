@@ -506,7 +506,7 @@ def eyecontact(vid):
         # cv2.destroyAllWindows()
 
     try:
-        eyecontact_score = ((eyecount / count) * 100)
+        eyecontact_score = int(round(((eyecount / count) * 100), 1))
 
         messagep = '긍정적인 부분: '
         messagen = '개선이 필요한 부분: '
