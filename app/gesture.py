@@ -218,10 +218,17 @@ def body(vid):
     # cv2.destroyAllWindows()
 
     try:
-        gesture_score = int(round((pos / count) * 100, 1))
+        positive_score = (pos / count) * 100
         crosed_score = (crossed / count) * 100
         raised_score = (raised / count) * 100
         face_score = (face / count) * 100
+        negative_score = crosed_score + raised_score + face_score
+
+        base_score = 80
+        gesture_score = base_score + positive_score - negative_score
+
+        # 제스처 점수는 최소 0점, 최대 100점, 소수점 없이 정수로 반환
+        gesture_score = int(round(max(0, min(100, gesture_score)),1))
 
         message = ''
 
