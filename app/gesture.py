@@ -218,17 +218,23 @@ def body(vid):
     # cv2.destroyAllWindows()
 
     try:
-        positive_score = (pos / count) * 100
-        crosed_score = (crossed / count) * 100
-        raised_score = (raised / count) * 100
-        face_score = (face / count) * 100
+        # 긍정 제스처 2개 점수
+        straight_score = int(round((straight / count) * 100, 1))
+        explain_score = int(round((explain / count) * 100, 1))
+        positive_score = straight_score + explain_score
+
+        # 부정 제스처 3개 점수
+        crosed_score = int(round((crossed / count) * 100, 1))
+        raised_score = int(round((raised / count) * 100, 1))
+        face_score = int(round((face / count) * 100, 1))
         negative_score = crosed_score + raised_score + face_score
 
+        # 기본 점수
         base_score = 80
-        gesture_score = base_score + positive_score - negative_score
 
         # 제스처 점수는 최소 0점, 최대 100점, 소수점 없이 정수로 반환
-        gesture_score = int(round(max(0, min(100, gesture_score)),1))
+        gesture_score = base_score + positive_score - negative_score
+        gesture_score = max(0, min(100, gesture_score))
 
         message = ''
 
@@ -275,4 +281,4 @@ def body(vid):
         gesture_score = 0
         message = '사용자가 감지되지 않았습니다.'
 
-    return output_frames, message, gesture_score
+    return output_frames, message, gesture_score, straight_score, explain_score, crosed_score, raised_score, face_score
