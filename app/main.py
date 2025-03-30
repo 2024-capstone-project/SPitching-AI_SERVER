@@ -29,46 +29,55 @@ async def analyze_eyecontact( file: UploadFile = File(...)):
     original_name, _ = os.path.splitext(file.filename)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    # 1. 업로드된 원본 파일 저장
+    # 업로드된 원본 파일 저장
     video_filename = f"{original_name}_{timestamp}.mp4"
     video_filepath = os.path.join(UPLOAD_FOLDER, video_filename)
 
     with open(video_filepath, "wb") as f:
         shutil.copyfileobj(file.file, f)
 
-    # 2. eyecontact 분석 실행
+    # eyecontact 분석 실행
     try:
-        # eyecontact 함수에서 필요한 데이터들 받기
         output_frames, message, eyecontact_score = eyecontact(video_filepath)
 
-        # 3. 비디오 파일을 분석 결과와 함께 저장
+        # 비디오 파일을 분석 결과와 함께 저장
         original_name, _ = os.path.splitext(file.filename)  # 확장자 제거한 원본 파일명
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")  # 현재 날짜 및 시간
-        output_video_filename = f"{original_name}_eyecontact_{timestamp}.mp4"
+        output_video_filename = f"{original_name}_시선추적_{timestamp}.mp4"
         output_video_path = os.path.join(OUTPUT_FOLDER, output_video_filename)
 
         # PyAV를 사용해 비디오 처리 후 저장
         output_video_bytes = BytesIO()
         output_frames = np.array(output_frames)
 
+        # 비디오 파일에서 프레임 레이트 가져오기
+        input_container = av.open(video_filepath)
+        input_stream = input_container.streams.video[0]
+        fps = input_stream.average_rate
+
         with av.open(output_video_bytes, 'w', format='mp4') as container:
-            stream = container.add_stream('h264', rate=20)
+            stream = container.add_stream('h264', rate=fps)
             for frame in output_frames:
                 frame = av.VideoFrame.from_ndarray(frame, format='rgb24')
                 packet = stream.encode(frame)
                 if packet:
                     container.mux(packet)
 
+            # 모든 프레임을 처리한 후, 남은 패킷을 마무리
+            packet = stream.encode(None) # None을 인코딩하여 남은 프레임을 모두 처리
+            if packet:
+                container.mux(packet)
+
         # 비디오 처리 결과를 저장
         with open(output_video_path, "wb") as out_file:
             out_file.write(output_video_bytes.getvalue())
 
-        # 4. 처리된 비디오 URL 생성 (로컬에서는 로컬 URL 사용)
+        # 처리된 비디오 URL 생성 (로컬에서는 로컬 URL 사용)
         video_url = f"/static/outputs/{output_video_filename}"
         # 배포 환경에서는 서버의 URL을 기준으로 비디오 URL을 반환해야 하므로, videoUrl을 서버의 실제 URL 경로로 설정
         # app.mount("/static", StaticFiles(directory="static"), name="static")
 
-        # 5. 분석 결과와 비디오 URL 반환
+        # 분석 결과와 비디오 URL 반환
         return JSONResponse(content={
             "eyecontactScore": eyecontact_score,
             "message": message,
@@ -83,7 +92,7 @@ async def analyze_eyecontact( file: UploadFile = File(...)):
 async def analyze_gesture(file: UploadFile = File(...)):
 
     try:
-        # 1. 파일 저장
+        # 파일 저장
         original_name, _ = os.path.splitext(file.filename)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
@@ -93,29 +102,39 @@ async def analyze_gesture(file: UploadFile = File(...)):
         with open(video_filepath, "wb") as f:
             shutil.copyfileobj(file.file, f)
 
-        # 2. 제스처 분석 실행
+        # 제스처 분석 실행
         output_frames, message, gesture_score, straight_score, explain_score, crosed_score, raised_score, face_score = body(video_filepath)
 
-        # 3. PyAV를 사용해 비디오 처리 후 저장
+        # 입력 비디오에서 FPS 추출
+        input_container =  av.open(video_filepath)
+        input_stream = input_container.streams.video[0]
+        fps = input_stream.average_rate # 입력 비디오의 fps 값 가져오기
+
+        # PyAV를 사용해 비디오 처리 후 저장
         output_video_bytes = BytesIO()
         with av.open(output_video_bytes, 'w', format='mp4') as container:
-            stream = container.add_stream('h264', rate=20)  # H264 codec, 20 fps
+            stream = container.add_stream('h264', rate=fps)
             for frame in output_frames:
                 frame = av.VideoFrame.from_ndarray(frame, format='rgb24')
                 packet = stream.encode(frame)
                 if packet:
                     container.mux(packet)
 
-        # 4. 비디오 처리 결과를 저장
-        output_video_filename = f"{original_name}_gesture_{timestamp}.mp4"
+            # 모든 프레임을 처리한 후, 남은 패킷을 마무리
+            packet = stream.encode(None) # None을 인코딩 하여 남은 프레임을 모두 처리
+            if packet:
+                container.mux(packet)
+
+        # 비디오 처리 결과를 저장
+        output_video_filename = f"{original_name}_제스처_{timestamp}.mp4"
         output_video_path = os.path.join(OUTPUT_FOLDER, output_video_filename)
         with open(output_video_path, "wb") as out_file:
             out_file.write(output_video_bytes.getvalue())
 
-        # 5. 처리된 비디오 URL 생성
+        # 처리된 비디오 URL 생성
         video_url = f"/static/outputs/{output_video_filename}"
 
-        # 6. 분석 결과와 비디오 URL 반환
+        # 분석 결과와 비디오 URL 반환
         return JSONResponse(content={
             "gestureScore": gesture_score,
             "straight_score": straight_score,
