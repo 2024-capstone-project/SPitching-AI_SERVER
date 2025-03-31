@@ -19,6 +19,5 @@ AI_SERVER
 │   └── uploads
 ├── Dockerfile
 ├── README.md
-├── directory_structure.txt
 └── requirements.txt
 ```
