@@ -56,11 +56,9 @@ def convert_webm_to_wav(webm_content):
     wav_content, _ = ffmpeg_process.communicate(input=input_data)
     return wav_content
 
-
 def match_target_amplitude(sound, target_dBFS):
     normalized_sound = sound.apply_gain(target_dBFS - sound.dBFS)
     return normalized_sound
-
 
 def predict_filler(audio_file):
     audio_file.export(temp_wav_path, format="wav")
@@ -71,11 +69,14 @@ def predict_filler(audio_file):
     padded_mfcc = np.expand_dims(padded_mfcc, 0)
 
     result = filler_classifier_model.predict(padded_mfcc)
+
+    # 판별 완료된 음성 파일 삭제
+    os.remove(temp_wav_path)
+
     if result[0][0] >= result[0][1]:
         return 0
     else:
         return 1
-
 
 def predict_filler_type(audio_file):
     wav, sr = librosa.load(temp_wav_path, sr=16000)
@@ -87,11 +88,13 @@ def predict_filler_type(audio_file):
     padded_mfcc = np.expand_dims(padded_mfcc, 0)
     result = filler_classifier_model.predict(padded_mfcc)
 
+    # 판별 완료된 음성 파일 삭제
     os.remove(temp_wav_path)
     return np.argmax(result)
 
-
 def shorter_filler(json_result, audio_file, min_silence_len, start_time, non_silence_start):
+
+    # 침묵 길이를 더 짧게
     min_silence_length = (int)(min_silence_len / 1.2)
 
     intervals = detect_nonsilent(audio_file,
@@ -100,16 +103,21 @@ def shorter_filler(json_result, audio_file, min_silence_len, start_time, non_sil
                                  )
     for interval in intervals:
         interval_audio = audio_file[interval[0]:interval[1]]
+
+        # padding 40 길이 이상인 경우 더 짧게
         if (interval[1] - interval[0] >= 460):
             non_silence_start = shorter_filler(json_result, interval_audio, min_silence_length,
                                                interval[0] + start_time, non_silence_start)
-        else:
-            if predict_filler(interval_audio) == 0:
-                json_result.append({'start': non_silence_start, 'end': start_time + interval[0], 'tag': '1000'})
-                non_silence_start = start_time + interval[0]
-                json_result.append({'start': start_time + interval[0], 'end': start_time + interval[1], 'tag': '1111'})
-    return non_silence_start
 
+        else: # padding 40 길이보다 짧은 경우 predict
+            if predict_filler(interval_audio) == 0: # 추임새인 경우
+                json_result.append({'start': non_silence_start, 'end': start_time + interval[0], 'tag': '1000'}) # tag: 1000 means non-slience
+                non_silence_start = start_time + interval[0]
+
+                # 추임새 tagging
+                json_result.append({'start': start_time + interval[0], 'end': start_time + interval[1], 'tag': '1111'}) # tag: 1111 means filler word
+
+    return non_silence_start
 
 def create_json(audio_file):
     intervals_jsons = []
@@ -122,21 +130,23 @@ def create_json(audio_file):
         return intervals_jsons
 
     if intervals[0][0] != 0:
-        intervals_jsons.append({'start': 0, 'end': intervals[0][0], 'tag': '0000'})
+        intervals_jsons.append({'start': 0, 'end': intervals[0][0], 'tag': '0000'}) # tag: 0000 means silence
     non_silence_start = intervals[0][0]
     before_silence_start = intervals[0][1]
 
     for interval in intervals:
         interval_audio = audio_file[interval[0]:interval[1]]
 
+        # 800ms초 이상의 공백 부분 처리
         if (interval[0] - before_silence_start) >= 800:
-            intervals_jsons.append({'start': non_silence_start, 'end': before_silence_start + 200, 'tag': '1000'})
+            intervals_jsons.append({'start': non_silence_start, 'end': before_silence_start + 200, 'tag': '1000'}) # tag: 1000 means non-slience
             non_silence_start = interval[0] - 200
-            intervals_jsons.append({'start': before_silence_start, 'end': interval[0], 'tag': '0000'})
+            intervals_jsons.append({'start': before_silence_start, 'end': interval[0], 'tag': '0000'}) # tag: 0000 means slience
 
+        # 추임새인 경우
         if predict_filler(interval_audio) == 0:
             if len(interval_audio) <= 460:
-                intervals_jsons.append({'start': non_silence_start, 'end': interval[0], 'tag': '1000'})
+                intervals_jsons.append({'start': non_silence_start, 'end': interval[0], 'tag': '1000'}) # tag: 1000 means non-slience
                 non_silence_start = interval[0]
                 intervals_jsons.append({'start': interval[0], 'end': interval[1], 'tag': '1111'})
             else:
@@ -148,7 +158,6 @@ def create_json(audio_file):
         intervals_jsons.append({'start': non_silence_start, 'end': len(audio_file), 'tag': '1000'})
 
     return intervals_jsons
-
 
 def STT_with_json(audio_file, jsons):
     first_silence = 0
@@ -170,19 +179,22 @@ def STT_with_json(audio_file, jsons):
 
     for json in jsons:
         if json['tag'] == '0000': # 침묵
+            # 통역 개시 지연시간
             if num == 0:
                 first_silence = first_silence + (json['end'] - json['start']) / 1000
             else:
                 silence_interval = silence_interval + (json['end'] - json['start']) / 1000
                 silence = "(" + str(round((json['end'] - json['start']) / 1000)) + "초).."
                 transcript_json.append({'start': json['start'], 'end': json['end'], 'tag': '0000', 'result': silence})
-        elif json['tag'] == '1111': # 추임새 (어,음,그) 처리
+
+        elif json['tag'] == '1111':
+            # 전사 개시 지연시간
             if num == 0:
                 silence = "(" + str(round(first_silence)) + "초).."
                 transcript_json.append({'start': 0, 'end': json['start'], 'tag': '0000', 'result': silence})
                 first_silence_interval = first_silence
 
-            # 추임새 유형 분류
+            # 추임새 어/음/그 분류
             filler_type = predict_filler_type(audio_file[json['start']:json['end']])
             duration = (json['end'] - json['start']) / 1000 # 초 단위 변환
 
@@ -210,6 +222,8 @@ def STT_with_json(audio_file, jsons):
             try:
                 stt = r.recognize_google(audio_data=audio, language="ko-KR")
                 first_silence_interval = 0
+
+                # 전사 개시 지연시간
                 if num == 0:
                     silence = "(" + str(round(first_silence)) + "초).."
                     transcript_json.append({'start': 0, 'end': json['start'], 'tag': '0000', 'result': silence})
@@ -225,7 +239,7 @@ def STT_with_json(audio_file, jsons):
                 if unrecognizable_start == 0:
                     unrecognizable_start = json['start']
 
-    filler_ratio = round(100*filler_total_time/(audio_total_length - first_silence - silence_interval), 2)
+    filler_ratio = round(100*filler_total_time/(audio_total_length - first_silence_interval - silence_interval), 2)
     stt_filler_score, stt_feedback = calculate_filler_score(filler_ratio)
     stt_score_feedback_json.append({'발표 유창성 점수' : stt_filler_score,
                                     '발표 유창성 피드백' : stt_feedback})
@@ -245,21 +259,21 @@ def STT_with_json(audio_file, jsons):
 
 def calculate_filler_score(filler_ratio):
 
-    if filler_ratio <= 3:
-        score = 100 - filler_ratio*2
+    if filler_ratio <= 1: # 95점 이상
+        score = 100 - filler_ratio*5
         stt_feedback = "아주 훌륭합니다! 발표에서 불필요한 추임새가 거의 사용되지 않았습니다. 자연스럽고 유창한 발표였습니다."
-    elif filler_ratio <= 5:
-        score = 100 - filler_ratio*3
+    elif filler_ratio <= 3: # 82점 이상
+        score = 100 - filler_ratio*6
         stt_feedback = "발표 중 ‘어, 음, 그’와 같은 불필요한 추임새가 다소 반복적으로 사용되었습니다. " \
                    "발표의 흐름이 살짝 끊기는 느낌이 있었지만, 내용 전달에는 큰 영향을 주지 않았습니다." \
                    "다음 발표에서는 문장을 더 명확하게 구성하는 연습을 해보는 것이 좋겠습니다."
-    elif filler_ratio <= 10:
-        score = 100 - filler_ratio*3
+    elif filler_ratio <= 5: # 65점 이상
+        score = 100 - filler_ratio*7
         stt_feedback = "발표에서 불필요한 추임새가 자주 등장하여 발표의 명확성이 다소 저하되었습니다. " \
                    "발표를 듣는 동안 청중이 핵심 내용을 파악하는데 방해가 될 가능성이 있습니다." \
                    "발표 전 충분한 연습을 통해 자연스럽게 발표 내용을 연결하는 연습을 해보세요."
     else:
-        score = 100 - filler_ratio*4
+        score = 100 - filler_ratio*8 # 60점 미만
         stt_feedback = "발표에서 불필요한 추임새가 과도하게 사용되었습니다. " \
                    "발표 흐름이 끊기고, 청중의 집중도가 낮아질 가능성이 높습니다." \
                    "발표 내용이 전달되기 어려울 수 있으므로, 명확하고 간결한 문장을 구성하는 연습이 필요합니다." \
