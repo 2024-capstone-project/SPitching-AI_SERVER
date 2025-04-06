@@ -1,5 +1,5 @@
 import numpy as np
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.responses import JSONResponse
 from datetime import datetime
 
@@ -24,7 +24,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
 app = FastAPI()
-@app.post("/api/v1/model/eyecontact")
+@app.post("/api/v1/feedback/eyecontact")
 async def analyze_eyecontact( file: UploadFile = File(...)):
     original_name, _ = os.path.splitext(file.filename)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -88,8 +88,12 @@ async def analyze_eyecontact( file: UploadFile = File(...)):
         return JSONResponse(status_code=500, content={"message": f"Error processing video: {str(e)}"})
 
 
-@app.post("/api/v1/model/gesture")
-async def analyze_gesture(file: UploadFile = File(...)):
+@app.post("/api/v1/feedback/gesture")
+async def analyze_gesture(
+        file: UploadFile = File(...),
+        userId: str = Form(...),
+        presentationId: str = Form(...)
+        ):
 
     try:
         # 파일 저장
@@ -103,7 +107,7 @@ async def analyze_gesture(file: UploadFile = File(...)):
             shutil.copyfileobj(file.file, f)
 
         # 제스처 분석 실행
-        output_frames, message, gesture_score, straight_score, explain_score, crosed_score, raised_score, face_score = body(video_filepath)
+        output_frames, message, gesture_score, straight_score, explain_score, crossed_score, raised_score, face_score = body(video_filepath)
 
         # 입력 비디오에서 FPS 추출
         input_container =  av.open(video_filepath)
@@ -139,7 +143,7 @@ async def analyze_gesture(file: UploadFile = File(...)):
             "gestureScore": gesture_score,
             "straight_score": straight_score,
             "explain_score": explain_score,
-            "crossed_score": crosed_score,
+            "crossed_score": crossed_score,
             "raised_score": raised_score,
             "face_score": face_score,
             "message": message,
@@ -149,7 +153,7 @@ async def analyze_gesture(file: UploadFile = File(...)):
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": f"Error processing video: {str(e)}"})
 
-@app.post("/api/v1/model/stt")
+@app.post("/api/v1/feedback/stt")
 async def analyze_stt(file: UploadFile = File(...)):
 
     video_data = await file.read()
