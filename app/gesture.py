@@ -224,10 +224,10 @@ def body(vid):
         positive_score = straight_score + explain_score
 
         # 부정 제스처 3개 점수
-        crosed_score = int(round((crossed / count) * 100, 1))
+        crossed_score = int(round((crossed / count) * 100, 1))
         raised_score = int(round((raised / count) * 100, 1))
         face_score = int(round((face / count) * 100, 1))
-        negative_score = crosed_score + raised_score + face_score
+        negative_score = crossed_score + raised_score + face_score
 
         # 기본 점수
         base_score = 80
@@ -252,7 +252,7 @@ def body(vid):
                 "적절한 손동작은 발표 내용의 핵심을 강조하는 데 효과적이며, 청중의 집중도를 높이는 데 기여할 수 있습니다."
             )
 
-        if crosed_score >= 10:
+        if crossed_score >= 10:
             messagen += (
                 " 발표 중 팔짱을 끼는 습관은 청중에게 방어적인 인상을 줄 수 있습니다. "
                 "팔짱을 푸는 것만으로도 더욱 개방적이고 친근한 태도를 연출할 수 있으니 신경 써보세요."
@@ -281,4 +281,4 @@ def body(vid):
         gesture_score = 0
         message = '사용자가 감지되지 않았습니다.'
 
-    return output_frames, message, gesture_score, straight_score, explain_score, crosed_score, raised_score, face_score
+    return output_frames, message, gesture_score, straight_score, explain_score, crossed_score, raised_score, face_score

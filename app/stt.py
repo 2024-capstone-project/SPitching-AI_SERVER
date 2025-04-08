@@ -199,13 +199,13 @@ def STT_with_json(audio_file, jsons):
             duration = (json['end'] - json['start']) / 1000 # 초 단위 변환
 
             if filler_type == 0:
-                transcript_json.append({'start': json['start'], 'end': json['end'], 'tag': '1001', 'result': '어(추임새)'})
+                transcript_json.append({'start': json['start'], 'end': json['end'], 'tag': '1001', 'result': '어'})
                 filler_1 = filler_1 + 1
             elif filler_type == 1:
-                transcript_json.append({'start': json['start'], 'end': json['end'], 'tag': '1010', 'result': '음(추임새)'})
+                transcript_json.append({'start': json['start'], 'end': json['end'], 'tag': '1010', 'result': '음'})
                 filler_2 = filler_2 + 1
             else:
-                transcript_json.append({'start': json['start'], 'end': json['end'], 'tag': '1100', 'result': '그(추임새)'})
+                transcript_json.append({'start': json['start'], 'end': json['end'], 'tag': '1100', 'result': '그'})
                 filler_3 = filler_3 + 1
 
             filler_total_time += duration # 총 filler word 사용시간 증가
