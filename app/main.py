@@ -1,3 +1,5 @@
+import httpx
+import logging
 import numpy as np
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.responses import JSONResponse
@@ -11,6 +13,11 @@ import os
 import av
 import shutil
 
+# httpx의 로깅을 설정
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger("httpx")
+logger.setLevel(logging.DEBUG)
+
 # 프로젝트 root 디렉토리 설정
 app_dir = os.path.dirname(__file__)
 project_root = os.path.dirname(app_dir)
@@ -22,6 +29,9 @@ OUTPUT_FOLDER = os.path.join(project_root, 'static', 'outputs')
 # 폴더가 존재하지 않으면 생성
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+
+# 웹훅 URL 기본 설정 (백엔드 서버의 URL)
+WEBHOOK_URL = "https://spitching.store/api/v1/feedback"
 
 app = FastAPI()
 @app.post("/api/v1/feedback/eyecontact")
@@ -91,8 +101,8 @@ async def analyze_eyecontact( file: UploadFile = File(...)):
 @app.post("/api/v1/feedback/gesture")
 async def analyze_gesture(
         file: UploadFile = File(...),
-        userId: str = Form(...),
-        presentationId: str = Form(...)
+        userId: int = Form(...),
+        presentationId: int = Form(...)
         ):
 
     try:
@@ -110,7 +120,7 @@ async def analyze_gesture(
         output_frames, message, gesture_score, straight_score, explain_score, crossed_score, raised_score, face_score = body(video_filepath)
 
         # 입력 비디오에서 FPS 추출
-        input_container =  av.open(video_filepath)
+        input_container = av.open(video_filepath)
         input_stream = input_container.streams.video[0]
         fps = input_stream.average_rate # 입력 비디오의 fps 값 가져오기
 
@@ -138,17 +148,49 @@ async def analyze_gesture(
         # 처리된 비디오 URL 생성
         video_url = f"/static/outputs/{output_video_filename}"
 
-        # 분석 결과와 비디오 URL 반환
-        return JSONResponse(content={
-            "gestureScore": gesture_score,
-            "straight_score": straight_score,
-            "explain_score": explain_score,
-            "crossed_score": crossed_score,
-            "raised_score": raised_score,
-            "face_score": face_score,
-            "message": message,
+        gesture_feedback = {
+            "userId": userId,
+            "presentationId": presentationId,
+            "gestureScore": int(gesture_score),
+            "straightScore": int(straight_score),
+            "explainScore": int(explain_score),
+            "crossedScore": int(crossed_score),
+            "raisedScore": int(raised_score),
+            "faceScore": int(face_score),
             "videoUrl": video_url
-        })
+            # 제스처 피드백 메세지는 제외한 상태
+        }
+
+        # 웹훅 URL에 제스처 경로 추가
+        webhook_url_gesture = f"{WEBHOOK_URL}/gesture"
+
+        # 웹훅 호출
+        async with httpx.AsyncClient(follow_redirects=True) as client:
+            response = await client.post(webhook_url_gesture, json=gesture_feedback)
+
+            # 응답 상태코드와 본문로그 출력
+            logger.debug(f"Webhook response status code : {response.status_code}")
+            logger.debug(f"Webhook response body : {response.text}")
+
+            if response.status_code != 200:
+                return JSONResponse(status_code=500, content={
+                    "message" : f"Error sending webhook: {response.status_code} : {response.text}"
+                })
+
+        # 웹훅 호출 성공
+        return JSONResponse(content=gesture_feedback)
+
+        # # 분석 결과와 비디오 URL 반환
+        # return JSONResponse(content={
+        #     "gestureScore": gesture_score,
+        #     "straightScore": straight_score,
+        #     "explainScore": explain_score,
+        #     "crossedScore": crossed_score,
+        #     "raisedScore": raised_score,
+        #     "faceScore": face_score,
+        #     "message": message, # 제스처 피드백 메세지 포함된 기존 반환값
+        #     "videoUrl": video_url
+        # })
 
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": f"Error processing video: {str(e)}"})
