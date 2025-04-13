@@ -11,3 +11,4 @@ librosa
 SpeechRecognition
 ffmpeg
 xgboost
+httpx
