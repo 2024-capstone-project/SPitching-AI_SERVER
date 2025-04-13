@@ -102,7 +102,8 @@ async def analyze_eyecontact( file: UploadFile = File(...)):
 async def analyze_gesture(
         file: UploadFile = File(...),
         userId: int = Form(...),
-        presentationId: int = Form(...)
+        presentationId: int = Form(...),
+        practiceId: int = Form(...)
         ):
 
     try:
@@ -151,6 +152,7 @@ async def analyze_gesture(
         gesture_feedback = {
             "userId": userId,
             "presentationId": presentationId,
+            "practiceId": practiceId,
             "gestureScore": int(gesture_score),
             "straightScore": int(straight_score),
             "explainScore": int(explain_score),
