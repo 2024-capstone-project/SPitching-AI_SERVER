@@ -224,19 +224,51 @@ async def analyze_gesture(
         return JSONResponse(status_code=500, content={"message": f"Error processing video: {str(e)}"})
 
 @app.post("/api/v1/feedback/stt")
-async def analyze_stt(file: UploadFile = File(...)):
+async def analyze_stt(
+        file: UploadFile = File(...),
+        userId: int = Form(...),
+        presentationId: int = Form(...),
+        practiceId: int = Form(...)):
 
-    video_data = await file.read()
-    statistics_filler, statistics_silence, stt_score_feedback, transcript = await get_prediction(video_data)
+    try:
+        # 파일 읽기
+        video_data = await file.read()
 
-    response_data = {
-        "statistics_filler": statistics_filler,
-        "statistics_silence": statistics_silence,
-        "stt_score_feedback": stt_score_feedback,
-        "transcript": transcript
-    }
-    return JSONResponse(content=response_data)
+        # STT 분석 실행
+        statistics_filler, statistics_silence, stt_score_feedback, transcript = await get_prediction(video_data)
 
+        # 피드백 데이터 구성
+        stt_feedback = {
+            "userId": userId,
+            "presentationId": presentationId,
+            "practiceId": practiceId,
+            "statistics_filler": statistics_filler,
+            "statistics_silence": statistics_silence,
+            "stt_score_feedback": stt_score_feedback,
+            "transcript": transcript
+        }
+
+        # 웹훅 URL에 STT 경로 추가
+        webhook_url_stt = f"{WEBHOOK_URL}/stt"
+
+        # 웹훅 호출
+        async with httpx.AsyncClient(follow_redirects=True) as client:
+            response = await client.post(webhook_url_stt, json=stt_feedback)
+
+            # 응답 상태코드와 본문 로그 출력
+            logger.debug(f"Webhook response status code : {response.status_code}")
+            logger.debug(f"Webhook response body : {response.text}")
+
+            if response.status_code != 200:
+                return JSONResponse(status_code=500, content={
+                    "message": f"Error sending webhook: {response.status_code} : {response.text}"
+                })
+
+        # 웹훅 호출 성공
+        return JSONResponse(content=stt_feedback)
+
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"message": f"Error processing STT: {str(e)}"})
 
 if __name__ == "__main__":
     import uvicorn
