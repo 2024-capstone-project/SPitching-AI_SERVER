@@ -35,7 +35,12 @@ WEBHOOK_URL = "https://spitching.store/api/v1/feedback"
 
 app = FastAPI()
 @app.post("/api/v1/feedback/eyecontact")
-async def analyze_eyecontact( file: UploadFile = File(...)):
+async def analyze_eyecontact(
+        file: UploadFile = File(...),
+        userId: int = Form(...),
+        presentationId: int = Form(...),
+        practiceId: int = Form(...)):
+
     original_name, _ = os.path.splitext(file.filename)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
@@ -88,11 +93,32 @@ async def analyze_eyecontact( file: UploadFile = File(...)):
         # app.mount("/static", StaticFiles(directory="static"), name="static")
 
         # 분석 결과와 비디오 URL 반환
-        return JSONResponse(content={
+        eyecontact_feedback = {
+            "userId": userId,
+            "presentationId": presentationId,
+            "practiceId": practiceId,
             "eyecontactScore": eyecontact_score,
-            "message": message,
             "videoUrl": video_url
-        })
+        }
+
+        # 웹훅 URL에 시선추적 경로 추가
+        webhook_url_eyecontact = f"{WEBHOOK_URL}/eyecontact"
+
+        # 웹훅 호출
+        async with httpx.AsyncClient(follow_redirects=True) as client:
+            response = await client.post(webhook_url_eyecontact, json=eyecontact_feedback)
+
+            # 응답 상태코드와 본문로그 출력
+            logger.debug(f"Webhook response status code : {response.status_code}")
+            logger.debug(f"Webhook response body : {response.text}")
+
+            if response.status_code != 200:
+                return JSONResponse(status_code=500, content={
+                    "message": f"Error sending webhook: {response.status_code} : {response.text}"
+                })
+
+        # 웹훅 호출 성공
+        return JSONResponse(content=eyecontact_feedback)
 
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": f"Error processing video: {str(e)}"})
