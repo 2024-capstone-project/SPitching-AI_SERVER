@@ -31,7 +31,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
 # 웹훅 URL 기본 설정 (백엔드 서버의 URL)
-WEBHOOK_URL = "https://spitching.store/api/v1/feedback"
+WEBHOOK_URL = "https://api.spitching.store/api/v1/feedback"
 
 app = FastAPI()
 @app.post("/api/v1/feedback/eyecontact")
@@ -244,7 +244,6 @@ async def analyze_stt(
             "practiceId": practiceId,
             "statistics_filler": statistics_filler,
             "statistics_silence": statistics_silence,
-            "stt_score_feedback": stt_score_feedback,
             "transcript": transcript
         }
 
