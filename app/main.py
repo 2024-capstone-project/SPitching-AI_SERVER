@@ -31,7 +31,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
 # 웹훅 URL 기본 설정 (백엔드 서버의 URL)
-WEBHOOK_URL = "https://spitching.store/api/v1/feedback"
+WEBHOOK_URL = "https://api.spitching.store/api/v1/feedback"
 
 app = FastAPI()
 @app.post("/api/v1/feedback/eyecontact")
@@ -235,16 +235,33 @@ async def analyze_stt(
         video_data = await file.read()
 
         # STT 분석 실행
-        statistics_filler, statistics_silence, stt_score_feedback, transcript = await get_prediction(video_data)
+        statistics_filler, statistics_silence, fluency_score, transcript = await get_prediction(video_data)
+
+        statistics_filler = statistics_filler[0]
+        statistics_silence = statistics_silence[0]
 
         # 피드백 데이터 구성
         stt_feedback = {
             "userId": userId,
             "presentationId": presentationId,
             "practiceId": practiceId,
-            "statistics_filler": statistics_filler,
-            "statistics_silence": statistics_silence,
-            "stt_score_feedback": stt_score_feedback,
+            "fluencyScore": fluency_score,
+            "statisticsFiller": [
+                {
+                    "eo": statistics_filler['어'],
+                    "eum": statistics_filler['음'],
+                    "geu": statistics_filler['그'],
+                    "totalFillerCount": statistics_filler['불필요한 추임새 총 개수'],
+                    "fillerRatio": statistics_filler['발화시간 대비 추임새 비율(%)']
+                }
+            ],
+            "statisticsSilence": [
+                {
+                    "silenceRatio": statistics_silence['침묵비율(%)'],
+                    "speakingRatio": statistics_silence['발화비율(%)'],
+                    "totalPresentationTime": statistics_silence['전체발표시간(초)']
+                }
+            ],
             "transcript": transcript
         }
 
