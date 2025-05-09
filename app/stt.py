@@ -241,8 +241,9 @@ def STT_with_json(audio_file, jsons):
 
     filler_ratio = round(100*filler_total_time/(audio_total_length - first_silence_interval - silence_interval), 2)
     stt_filler_score, stt_feedback = calculate_filler_score(filler_ratio)
-    stt_score_feedback_json.append({'발표 유창성 점수' : stt_filler_score,
-                                    '발표 유창성 피드백' : stt_feedback})
+    fluency_score = stt_filler_score
+    # stt_score_feedback_json.append({'발표 유창성 점수' : stt_filler_score,
+    #                                 '발표 유창성 피드백' : stt_feedback})
 
     statistics_filler_json.append({'어': filler_1,
                                    '음': filler_2,
@@ -255,7 +256,7 @@ def STT_with_json(audio_file, jsons):
                                                 audio_total_length - first_silence - silence_interval) / audio_total_length),
                                     '전체발표시간(초)': round(audio_total_length)})
 
-    return statistics_filler_json, statistics_silence_json, stt_score_feedback_json, transcript_json
+    return statistics_filler_json, statistics_silence_json, fluency_score, transcript_json
 
 def calculate_filler_score(filler_ratio):
 
@@ -287,5 +288,5 @@ async def get_prediction(video_data):
     wav_file = convert_webm_to_wav(webm_content)
     audio = AudioSegment.from_wav(io.BytesIO(wav_file))
     intervals_jsons = create_json(audio)
-    statistics_filler, statistics_silence, stt_score_feedback, transcript = STT_with_json(audio, intervals_jsons)
-    return statistics_filler, statistics_silence, stt_score_feedback, transcript
+    statistics_filler, statistics_silence, fluency_score, transcript = STT_with_json(audio, intervals_jsons)
+    return statistics_filler, statistics_silence, fluency_score, transcript
