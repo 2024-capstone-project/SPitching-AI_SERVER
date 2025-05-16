@@ -12,3 +12,4 @@ SpeechRecognition
 ffmpeg
 xgboost
 httpx
+boto3
