@@ -18,18 +18,6 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger("httpx")
 logger.setLevel(logging.DEBUG)
 
-# 프로젝트 root 디렉토리 설정
-app_dir = os.path.dirname(__file__)
-project_root = os.path.dirname(app_dir)
-
-# static 디렉토리 내의 uploads와 outpouts 폴더 경로 설정
-UPLOAD_FOLDER = os.path.join(project_root, 'static', 'uploads')
-OUTPUT_FOLDER = os.path.join(project_root, 'static', 'outputs')
-
-# 폴더가 존재하지 않으면 생성
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(OUTPUT_FOLDER, exist_ok=True)
-
 # 웹훅 URL 기본 설정 (백엔드 서버의 URL)
 WEBHOOK_URL = "https://api.spitching.store/api/v1/feedback"
 
@@ -41,30 +29,22 @@ async def analyze_eyecontact(
         presentationId: int = Form(...),
         practiceId: int = Form(...)):
 
-    original_name, _ = os.path.splitext(file.filename)
-
-    # 업로드된 원본 파일 저장
-    video_filename = f"{original_name}.mp4"
-    video_filepath = os.path.join(UPLOAD_FOLDER, video_filename)
-
-    with open(video_filepath, "wb") as f:
-        shutil.copyfileobj(file.file, f)
-
-    # eyecontact 분석 실행
     try:
-        output_frames, message, eyecontact_score = eyecontact(video_filepath)
+        # 업로드 파일 읽기
+        video_data = await file.read()
+        tmp_input_path = f"/tmp/{file.filename}"
+        with open(tmp_input_path, "wb") as f:
+            f.write(video_data)
 
-        # 비디오 파일을 분석 결과와 함께 저장
-        original_name, _ = os.path.splitext(file.filename)  # 확장자 제거한 원본 파일명
-        output_video_filename = f"{original_name}_시선추적_.mp4"
-        output_video_path = os.path.join(OUTPUT_FOLDER, output_video_filename)
+        # eyecontact 분석 실행
+        output_frames, message, eyecontact_score = eyecontact(tmp_input_path)
 
-        # PyAV를 사용해 비디오 처리 후 저장
+        # 분석 결과 비디오 바이트로 변환
         output_video_bytes = BytesIO()
         output_frames = np.array(output_frames)
 
         # 비디오 파일에서 프레임 레이트 가져오기
-        input_container = av.open(video_filepath)
+        input_container = av.open(tmp_input_path)
         input_stream = input_container.streams.video[0]
         fps = input_stream.average_rate
 
@@ -81,14 +61,10 @@ async def analyze_eyecontact(
             if packet:
                 container.mux(packet)
 
-        # 비디오 처리 결과를 저장
-        with open(output_video_path, "wb") as out_file:
-            out_file.write(output_video_bytes.getvalue())
-
-        # 처리된 비디오 URL 생성 (로컬에서는 로컬 URL 사용)
-        video_url = f"/static/outputs/{output_video_filename}"
-        # 배포 환경에서는 서버의 URL을 기준으로 비디오 URL을 반환해야 하므로, videoUrl을 서버의 실제 URL 경로로 설정
-        # app.mount("/static", StaticFiles(directory="static"), name="static")
+        # S3에 비디오 처리결과 업로드
+        base_filename = os.path.splitext(file.filename)[0]
+        s3_key = f"outputs/{base_filename}_eyecontact.mp4"
+        video_url = upload_file_to_s3(output_video_bytes.getvalue(), s3_key)
 
         # 분석 결과와 비디오 URL 반환
         eyecontact_feedback = {
