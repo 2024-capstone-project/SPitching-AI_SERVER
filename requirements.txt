@@ -13,3 +13,4 @@ ffmpeg
 xgboost
 httpx
 boto3
+python-multipart
