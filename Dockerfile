@@ -1,4 +1,4 @@
-FROM python:3.10.12
+FROM python:3.10.12-slim
 WORKDIR /AI_SERVER
 
 # 필수 시스템 패키지 설치
@@ -6,7 +6,7 @@ RUN apt-get update && apt-get install -y \
     ffmpeg \
     libsm6 \
     libxext6 \
-    libgl1 \
+    libgl1-mesa-glx \
  && rm -rf /var/lib/apt/lists/*
 
 COPY ./requirements.txt /AI_SERVER/requirements.txt
