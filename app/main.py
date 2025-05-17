@@ -3,8 +3,8 @@ import logging
 import numpy as np
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.responses import JSONResponse
-from datetime import datetime
 
+from app.s3_upload import upload_file_to_s3
 from app.stt import get_prediction
 from app.gesture import body
 from app.eyecontact import eyecontact
@@ -42,10 +42,9 @@ async def analyze_eyecontact(
         practiceId: int = Form(...)):
 
     original_name, _ = os.path.splitext(file.filename)
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     # 업로드된 원본 파일 저장
-    video_filename = f"{original_name}_{timestamp}.mp4"
+    video_filename = f"{original_name}.mp4"
     video_filepath = os.path.join(UPLOAD_FOLDER, video_filename)
 
     with open(video_filepath, "wb") as f:
@@ -57,8 +56,7 @@ async def analyze_eyecontact(
 
         # 비디오 파일을 분석 결과와 함께 저장
         original_name, _ = os.path.splitext(file.filename)  # 확장자 제거한 원본 파일명
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")  # 현재 날짜 및 시간
-        output_video_filename = f"{original_name}_시선추적_{timestamp}.mp4"
+        output_video_filename = f"{original_name}_시선추적_.mp4"
         output_video_path = os.path.join(OUTPUT_FOLDER, output_video_filename)
 
         # PyAV를 사용해 비디오 처리 후 저장
@@ -135,9 +133,8 @@ async def analyze_gesture(
     try:
         # 파일 저장
         original_name, _ = os.path.splitext(file.filename)
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-        video_filename = f"{original_name}_{timestamp}.mp4"
+        video_filename = f"{original_name}.mp4"
         video_filepath = os.path.join(UPLOAD_FOLDER, video_filename)
 
         with open(video_filepath, "wb") as f:
@@ -167,7 +164,7 @@ async def analyze_gesture(
                 container.mux(packet)
 
         # 비디오 처리 결과를 저장
-        output_video_filename = f"{original_name}_제스처_{timestamp}.mp4"
+        output_video_filename = f"{original_name}_제스처.mp4"
         output_video_path = os.path.join(OUTPUT_FOLDER, output_video_filename)
         with open(output_video_path, "wb") as out_file:
             out_file.write(output_video_bytes.getvalue())
