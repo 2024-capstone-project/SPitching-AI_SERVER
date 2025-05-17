@@ -18,8 +18,7 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger("httpx")
 logger.setLevel(logging.DEBUG)
 
-# 웹훅 URL 기본 설정 (백엔드 서버의 URL)
-WEBHOOK_URL = "https://api.spitching.store/api/v1/feedback"
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 
 app = FastAPI()
 @app.post("/api/v1/feedback/eyecontact")
