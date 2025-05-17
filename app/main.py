@@ -27,10 +27,11 @@ async def analyze_eyecontact(
         file: UploadFile = File(...),
         userId: int = Form(...),
         presentationId: int = Form(...),
-        practiceId: int = Form(...)):
+        practiceId: int = Form(...)
+        ):
 
     try:
-        # 업로드 파일 읽기
+        # 업로드 파일 읽고 tmp 디렉토리에 저장
         video_data = await file.read()
         tmp_input_path = f"/tmp/{file.filename}"
         with open(tmp_input_path, "wb") as f:
@@ -107,24 +108,21 @@ async def analyze_gesture(
         ):
 
     try:
-        # 파일 저장
-        original_name, _ = os.path.splitext(file.filename)
-
-        video_filename = f"{original_name}.mp4"
-        video_filepath = os.path.join(UPLOAD_FOLDER, video_filename)
-
-        with open(video_filepath, "wb") as f:
-            shutil.copyfileobj(file.file, f)
+        # 업로드 파일 읽고 tmp 디렉토리에 저장
+        video_data = await file.read()
+        tmp_input_path = f"/tmp/{file.filename}"
+        with open(tmp_input_path, "wb") as f:
+            f.write(video_data)
 
         # 제스처 분석 실행
-        output_frames, message, gesture_score, straight_score, explain_score, crossed_score, raised_score, face_score = body(video_filepath)
+        output_frames, message, gesture_score, straight_score, explain_score, crossed_score, raised_score, face_score = body(tmp_input_path)
 
         # 입력 비디오에서 FPS 추출
-        input_container = av.open(video_filepath)
+        input_container = av.open(tmp_input_path)
         input_stream = input_container.streams.video[0]
         fps = input_stream.average_rate # 입력 비디오의 fps 값 가져오기
 
-        # PyAV를 사용해 비디오 처리 후 저장
+        # PyAV를 사용해 mp4 바이트 변환 후 저장
         output_video_bytes = BytesIO()
         with av.open(output_video_bytes, 'w', format='mp4') as container:
             stream = container.add_stream('h264', rate=fps)
@@ -139,14 +137,10 @@ async def analyze_gesture(
             if packet:
                 container.mux(packet)
 
-        # 비디오 처리 결과를 저장
-        output_video_filename = f"{original_name}_제스처.mp4"
-        output_video_path = os.path.join(OUTPUT_FOLDER, output_video_filename)
-        with open(output_video_path, "wb") as out_file:
-            out_file.write(output_video_bytes.getvalue())
-
-        # 처리된 비디오 URL 생성
-        video_url = f"/static/outputs/{output_video_filename}"
+        # S3에 비디오 처리결과 업로드
+        base_filename = os.path.splitext(file.filename)[0]
+        s3_key = f"outputs/{base_filename}_gesture.mp4"
+        video_url = upload_file_to_s3(output_video_bytes.getvalue(), s3_key)
 
         gesture_feedback = {
             "userId": userId,
@@ -180,18 +174,6 @@ async def analyze_gesture(
 
         # 웹훅 호출 성공
         return JSONResponse(content=gesture_feedback)
-
-        # # 분석 결과와 비디오 URL 반환
-        # return JSONResponse(content={
-        #     "gestureScore": gesture_score,
-        #     "straightScore": straight_score,
-        #     "explainScore": explain_score,
-        #     "crossedScore": crossed_score,
-        #     "raisedScore": raised_score,
-        #     "faceScore": face_score,
-        #     "message": message, # 제스처 피드백 메세지 포함된 기존 반환값
-        #     "videoUrl": video_url
-        # })
 
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": f"Error processing video: {str(e)}"})
