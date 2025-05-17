@@ -15,7 +15,6 @@ AI_SERVER
 │   ├── filler_classifier_model.h5
 │   ├── filter_determine_model.h5
 │   └── gesture_XGB_model.pkl
-├── .env
 ├── .gitignore
 ├── Dockerfile
 ├── README.md
