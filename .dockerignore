@@ -1,0 +1,12 @@
+# Python 관련 캐시 파일 및 폴더
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Git 관련
+.git
+.gitignore
+
+# 환경변수, 민감정보
+.env
