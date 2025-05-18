@@ -1,6 +1,9 @@
 import boto3
 import os
+from dotenv import load_dotenv
 from botocore.exceptions import NoCredentialsError
+
+load_dotenv() # .env 파일을 로드
 
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
@@ -21,8 +24,7 @@ def upload_file_to_s3(file_bytes: bytes, s3_key: str) -> str:
             Bucket=S3_BUCKET_NAME,
             Key=s3_key,
             Body=file_bytes,
-            ContentType="video/mp4",
-            ACL="public-read"  # 퍼블릭 접근 허용
+            ContentType="video/mp4"
         )
 
         return f"https://{S3_BUCKET_NAME}.s3.{AWS_REGION_NAME}.amazonaws.com/{s3_key}"
