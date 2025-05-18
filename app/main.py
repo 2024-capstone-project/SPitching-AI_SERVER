@@ -3,15 +3,18 @@ import logging
 import numpy as np
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.responses import JSONResponse
+from io import BytesIO
+from dotenv import load_dotenv
+import os
+import av
+import asyncio
 
 from app.s3_upload import upload_file_to_s3
 from app.stt import get_prediction
 from app.gesture import body
 from app.eyecontact import eyecontact
-from io import BytesIO
-import os
-import av
-import shutil
+
+load_dotenv()
 
 # httpx의 로깅을 설정
 logging.basicConfig(level=logging.DEBUG)
@@ -19,34 +22,49 @@ logger = logging.getLogger("httpx")
 logger.setLevel(logging.DEBUG)
 
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
-
 app = FastAPI()
-@app.post("/api/v1/feedback/eyecontact")
-async def analyze_eyecontact(
-        file: UploadFile = File(...),
-        userId: int = Form(...),
-        presentationId: int = Form(...),
-        practiceId: int = Form(...)
-        ):
 
+@app.post("/api/v1/feedback")
+async def analyze_all_feedback(
+    file: UploadFile = File(...),
+    userId: int = Form(...),
+    presentationId: int = Form(...),
+    practiceId: int = Form(...)
+):
     try:
-        # 업로드 파일 읽고 tmp 디렉토리에 저장
+        # 영상 1회 읽기
         video_data = await file.read()
         tmp_input_path = f"/tmp/{file.filename}"
         with open(tmp_input_path, "wb") as f:
             f.write(video_data)
+        base_filename = os.path.splitext(file.filename)[0]
 
+        # FPS 추출 1회만
+        input_container = av.open(tmp_input_path)
+        fps = input_container.streams.video[0].average_rate
+
+        # 백그라운드에서 병력적으로 분석 작업 시작 (각 분석이 끝나는 대로 웹훅 호출)
+        asyncio.create_task(analyze_eyecontact(tmp_input_path, base_filename, fps, userId, presentationId, practiceId))
+        asyncio.create_task(analyze_gesture(tmp_input_path, base_filename, fps, userId, presentationId, practiceId))
+        asyncio.create_task(analyze_stt(video_data, userId, presentationId, practiceId))
+
+        # 프론트에 바로 응답
+        return {"message": "All feedback analysis started"}
+
+    except Exception as e:
+        logger.error(f"Failed to start analysis: {str(e)}", exc_info=True)
+        return {"message": f"Internal server error: {str(e)}"}
+
+async def analyze_eyecontact(
+    path: str, base_filename: str, fps, userId: int, presentationId: int, practiceId: int
+) -> None:
+
+    try:
         # eyecontact 분석 실행
-        output_frames, message, eyecontact_score = eyecontact(tmp_input_path)
+        output_frames, message, eyecontact_score = eyecontact(path)
 
         # 분석 결과 비디오 바이트로 변환
         output_video_bytes = BytesIO()
-        output_frames = np.array(output_frames)
-
-        # 비디오 파일에서 프레임 레이트 가져오기
-        input_container = av.open(tmp_input_path)
-        input_stream = input_container.streams.video[0]
-        fps = input_stream.average_rate
 
         with av.open(output_video_bytes, 'w', format='mp4') as container:
             stream = container.add_stream('h264', rate=fps)
@@ -61,8 +79,9 @@ async def analyze_eyecontact(
             if packet:
                 container.mux(packet)
 
+        output_video_bytes.seek(0)
+
         # S3에 비디오 처리결과 업로드
-        base_filename = os.path.splitext(file.filename)[0]
         s3_key = f"outputs/{base_filename}_eyecontact.mp4"
         video_url = upload_file_to_s3(output_video_bytes.getvalue(), s3_key)
 
@@ -81,45 +100,17 @@ async def analyze_eyecontact(
         # 웹훅 호출
         async with httpx.AsyncClient(follow_redirects=True) as client:
             response = await client.post(webhook_url_eyecontact, json=eyecontact_feedback)
-
-            # 응답 상태코드와 본문로그 출력
-            logger.debug(f"Webhook response status code : {response.status_code}")
-            logger.debug(f"Webhook response body : {response.text}")
-
-            if response.status_code != 200:
-                return JSONResponse(status_code=500, content={
-                    "message": f"Error sending webhook: {response.status_code} : {response.text}"
-                })
-
-        # 웹훅 호출 성공
-        return JSONResponse(content=eyecontact_feedback)
+            logger.info(f"[Eyecontact] Webhook response: {response.status_code} {response.text}")
 
     except Exception as e:
-        return JSONResponse(status_code=500, content={"message": f"Error processing video: {str(e)}"})
+        logger.error(f"[Eyecontact] Error: {str(e)}", exc_info=True)
 
-
-@app.post("/api/v1/feedback/gesture")
 async def analyze_gesture(
-        file: UploadFile = File(...),
-        userId: int = Form(...),
-        presentationId: int = Form(...),
-        practiceId: int = Form(...)
-        ):
-
+    path: str, base_filename: str, fps, userId: int, presentationId: int, practiceId: int
+) -> None:
     try:
-        # 업로드 파일 읽고 tmp 디렉토리에 저장
-        video_data = await file.read()
-        tmp_input_path = f"/tmp/{file.filename}"
-        with open(tmp_input_path, "wb") as f:
-            f.write(video_data)
-
         # 제스처 분석 실행
-        output_frames, message, gesture_score, straight_score, explain_score, crossed_score, raised_score, face_score = body(tmp_input_path)
-
-        # 입력 비디오에서 FPS 추출
-        input_container = av.open(tmp_input_path)
-        input_stream = input_container.streams.video[0]
-        fps = input_stream.average_rate # 입력 비디오의 fps 값 가져오기
+        output_frames, message, gesture_score, straight_score, explain_score, crossed_score, raised_score, face_score = body(path)
 
         # PyAV를 사용해 mp4 바이트 변환 후 저장
         output_video_bytes = BytesIO()
@@ -136,8 +127,9 @@ async def analyze_gesture(
             if packet:
                 container.mux(packet)
 
+        output_video_bytes.seek(0)
+
         # S3에 비디오 처리결과 업로드
-        base_filename = os.path.splitext(file.filename)[0]
         s3_key = f"outputs/{base_filename}_gesture.mp4"
         video_url = upload_file_to_s3(output_video_bytes.getvalue(), s3_key)
 
@@ -161,38 +153,20 @@ async def analyze_gesture(
         # 웹훅 호출
         async with httpx.AsyncClient(follow_redirects=True) as client:
             response = await client.post(webhook_url_gesture, json=gesture_feedback)
-
-            # 응답 상태코드와 본문로그 출력
-            logger.debug(f"Webhook response status code : {response.status_code}")
-            logger.debug(f"Webhook response body : {response.text}")
-
-            if response.status_code != 200:
-                return JSONResponse(status_code=500, content={
-                    "message" : f"Error sending webhook: {response.status_code} : {response.text}"
-                })
-
-        # 웹훅 호출 성공
-        return JSONResponse(content=gesture_feedback)
+            logger.info(f"[Gesture] Webhook response: {response.status_code} {response.text}")
 
     except Exception as e:
-        return JSONResponse(status_code=500, content={"message": f"Error processing video: {str(e)}"})
+        logger.error(f"[Gesture] Error: {str(e)}")
 
-@app.post("/api/v1/feedback/stt")
 async def analyze_stt(
-        file: UploadFile = File(...),
-        userId: int = Form(...),
-        presentationId: int = Form(...),
-        practiceId: int = Form(...)):
+    video_data: bytes, userId: int, presentationId: int, practiceId: int
+) -> None:
 
     try:
-        # 파일 읽기
-        video_data = await file.read()
-
         # STT 분석 실행
         statistics_filler, statistics_silence, fluency_score, transcript = await get_prediction(video_data)
-
-        statistics_filler = statistics_filler[0]
-        statistics_silence = statistics_silence[0]
+        statistics_filler = statistics_filler[0] if statistics_filler else {}
+        statistics_silence = statistics_silence[0] if statistics_silence else {}
 
         # 피드백 데이터 구성
         stt_feedback = {
@@ -225,21 +199,10 @@ async def analyze_stt(
         # 웹훅 호출
         async with httpx.AsyncClient(follow_redirects=True) as client:
             response = await client.post(webhook_url_stt, json=stt_feedback)
-
-            # 응답 상태코드와 본문 로그 출력
-            logger.debug(f"Webhook response status code : {response.status_code}")
-            logger.debug(f"Webhook response body : {response.text}")
-
-            if response.status_code != 200:
-                return JSONResponse(status_code=500, content={
-                    "message": f"Error sending webhook: {response.status_code} : {response.text}"
-                })
-
-        # 웹훅 호출 성공
-        return JSONResponse(content=stt_feedback)
+            logger.info(f"[STT] Webhook response: {response.status_code} {response.text}")
 
     except Exception as e:
-        return JSONResponse(status_code=500, content={"message": f"Error processing STT: {str(e)}"})
+        logger.error(f"[STT] Error: {str(e)}", exc_info=True)
 
 if __name__ == "__main__":
     import uvicorn
