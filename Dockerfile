@@ -10,10 +10,10 @@ RUN apt-get update && apt-get install -y \
  && rm -rf /var/lib/apt/lists/*
 
 COPY ./requirements.txt /AI_SERVER/requirements.txt
-RUN pip install --no-cache-dir --upgrade -r /AI_SERVER/requirements.txt
+RUN pip install -r /AI_SERVER/requirements.txt
 
 COPY ./label /AI_SERVER/label
 COPY ./models /AI_SERVER/models
 COPY ./app /AI_SERVER/app
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--log-level", "debug"]
