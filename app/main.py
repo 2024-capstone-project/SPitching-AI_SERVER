@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 import os
 import av
 import asyncio
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.s3_upload import upload_file_to_s3
 from app.stt import get_prediction
@@ -15,14 +16,30 @@ from app.gesture import body
 from app.eyecontact import eyecontact
 
 load_dotenv()
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")
+
+app = FastAPI()
+
+# CORS 설정
+origins = [
+    "https://www.spitching.store",
+    "https://spitching.store",
+    "https://spitching.vercel.app",
+    "http://localhost:5173",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,     # 위 origin(프론트 주소들)만 허용
+    allow_credentials=True,    # 쿠키,세션 등 자격증명 포함 허용
+    allow_methods=["*"],       # 모든 메서드 허용
+    allow_headers=["*"],       # 프론트 요청 시 사용하는 모든 헤더 허용
+)
 
 # httpx의 로깅을 설정
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger("httpx")
 logger.setLevel(logging.DEBUG)
-
-WEBHOOK_URL = os.getenv("WEBHOOK_URL")
-app = FastAPI()
 
 @app.post("/api/v1/feedback")
 async def analyze_all_feedback(
