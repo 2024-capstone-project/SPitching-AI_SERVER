@@ -160,6 +160,7 @@ def create_json(audio_file):
     return intervals_jsons
 
 def STT_with_json(audio_file, jsons):
+    global first_silence_interval
     first_silence = 0
     num = 0
     unrecognizable_start = 0
