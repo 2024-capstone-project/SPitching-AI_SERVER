@@ -56,6 +56,15 @@ def convert_webm_to_wav(webm_content):
     wav_content, _ = ffmpeg_process.communicate(input=input_data)
     return wav_content
 
+# webm 변환 없이 mp4 입력 받으면 바로 wav로 변환
+def convert_mp4_to_wav(mp4_content:bytes) -> bytes:
+    input_data = mp4_content
+    ffmpeg_process = subprocess.Popen(
+        ["ffmpeg", "-i", "pipe:", "-vn", "-acodec", "pcm_s24le", "-ar", "48000", "-ac", "2", "-f", "wav", "pipe:"],
+        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    wav_content, _ = ffmpeg_process.communicate(input=input_data)
+    return wav_content
+
 def match_target_amplitude(sound, target_dBFS):
     normalized_sound = sound.apply_gain(target_dBFS - sound.dBFS)
     return normalized_sound
@@ -285,8 +294,9 @@ def calculate_filler_score(filler_ratio):
     return stt_filler_score, stt_feedback
 
 async def get_prediction(video_data):
-    webm_content = convert_video_to_webm(video_data)
-    wav_file = convert_webm_to_wav(webm_content)
+    # webm_content = convert_video_to_webm(video_data)
+    # wav_file = convert_webm_to_wav(webm_content)
+    wav_file = convert_mp4_to_wav(video_data)
     audio = AudioSegment.from_wav(io.BytesIO(wav_file))
     intervals_jsons = create_json(audio)
     statistics_filler, statistics_silence, fluency_score, transcript = STT_with_json(audio, intervals_jsons)
