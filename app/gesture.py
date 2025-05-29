@@ -230,7 +230,7 @@ def body(vid):
         negative_score = crossed_score + raised_score + face_score
 
         # 기본 점수
-        base_score = 80
+        base_score = 50
 
         # 제스처 점수는 최소 0점, 최대 100점, 소수점 없이 정수로 반환
         gesture_score = base_score + positive_score - negative_score
