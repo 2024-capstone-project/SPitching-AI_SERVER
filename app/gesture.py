@@ -7,13 +7,6 @@ import cv2
 import numpy as np
 import mediapipe as mp
 import joblib
-import xgboost as xgb
-
-# 기존 .pkl 모델 로드
-model = joblib.load('gesture_XGB_model.pkl')
-
-# GPU에서 사용할 수 있도록 json으로 저장
-model.save_model('gesture_XGB_model.json')
 
 app_dir = os.path.dirname(__file__)
 project_root = os.path.dirname(app_dir)
@@ -98,9 +91,7 @@ def draw_info_text(image, brect, facial_text):
 def load_model():
     # 모델 경로 설정
     model_path = os.path.join(project_root, 'models','gesture_XGB_model.pkl')
-    booster = xgb.Booster({'predictor': 'gpu_predictor'})
-    booster.load_model(model_path)
-    return booster
+    return joblib.load(model_path)
 
 def body(vid):
     # Rest of your code remains mostly unchanged, with adjustments for the Pose models
