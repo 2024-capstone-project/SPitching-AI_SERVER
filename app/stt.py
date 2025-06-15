@@ -15,19 +15,6 @@ OUTPUT_FOLDER = os.path.join(project_root, 'static', 'outputs')
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)  # 폴더 없으면 생성
 temp_wav_path = os.path.join(OUTPUT_FOLDER, "temp.wav")
 
-# GPU 사용 설정
-gpus = tf.config.list_physical_devices('GPU')
-if gpus:
-    try:
-        # GPU 메모리 점유 방식 설정 (필수는 아님, 안정성 위해 권장)
-        tf.config.experimental.set_memory_growth(gpus[0], True)
-        tf.config.set_visible_devices(gpus[0], 'GPU')
-        print("GPU 사용 중:", gpus[0])
-    except RuntimeError as e:
-        print("GPU 설정 중 오류:", e)
-else:
-    print("GPU를 찾을 수 없습니다. CPU 사용 중.")
-
 # 모델 경로 설정
 classifier_model_path = os.path.join(project_root, 'models', 'filler_classifier_model.h5')
 determine_model_path = os.path.join(project_root, 'models', 'filter_determine_model.h5')
