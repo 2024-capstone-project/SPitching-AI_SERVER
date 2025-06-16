@@ -3,3 +3,6 @@ static/
 __pycache__/
 .idea/
 .env
+github-action-key
+github-action-key.pub
+*.pem
