@@ -6,3 +6,4 @@ __pycache__/
 github-action-key
 github-action-key.pub
 *.pem
+*.pub
