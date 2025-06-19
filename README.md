@@ -1,4 +1,4 @@
-# 🗣️ 시선추적, 제스처 인식, STT 기반 AI 발표 트레이너 SPitching!
+<img width="193" alt="image" src="https://github.com/user-attachments/assets/71d041cf-db9f-45d5-9f8e-764efb14c464" /># 🗣️ 시선추적, 제스처 인식, STT 기반 AI 발표 트레이너 SPitching!
 
 ## 👩🏻‍💻 SPitching! AI
 
@@ -133,7 +133,7 @@ docker run -d \
 
 - ⛳ [프론트엔드 리드미](https://github.com/2024-capstone-project/SPitching-FE.git)
 - 🔐 [백엔드 리드미](https://github.com/2024-capstone-project/SPitching-BE.git)
-- 📋 시제품 사용설명서 *(구현 후 링크 연결 예정)*
+- 📋 [시제품 사용설명서](https://drive.google.com/file/d/1lfsYyS6EzFBWItVwZAlTmVsQtMTbv5En/view?usp=sharing)
 
 ## 🔍 Reference
 
