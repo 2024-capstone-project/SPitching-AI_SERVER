@@ -1,4 +1,4 @@
-# 🗣️ 시선추적, 제스처 인식, STT 기반 AI 발표 트레이너 스피칭, SPitching!
+# 🗣️ 시선추적, 제스처 인식, STT 기반 AI 발표 트레이너 SPitching!
 
 ## 👩🏻‍💻 SPitching! AI
 
